@@ -69,8 +69,11 @@ void ABlasterHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Create character overlay but do not add it to viewport.
-	if (const auto PlayerController = GetOwningPlayerController(); PlayerController && CharacterOverlayClass)
+	const auto PlayerController = GetOwningPlayerController();
+	if (!PlayerController) return;
+	
+	// Note we are not adding it to viewport.
+	if (CharacterOverlayClass)
 	{
 		CharacterOverlay = CreateWidget<UCharacterOverlay>(PlayerController, CharacterOverlayClass);
 	}
@@ -87,8 +90,9 @@ void ABlasterHUD::AddCharacterOverlay()
 void ABlasterHUD::DrawCrosshair(UTexture2D* Texture, const FVector2D& ViewportCenter, const FVector2D& Spread,
                                 const FLinearColor& CrosshairColor)
 {
-	const float TextureWidth = Texture->GetSizeX();
-	const float TextureHeight = Texture->GetSizeY();
+	if (!IsValid(Texture)) return;
+	const auto TextureWidth = Texture->GetSizeX();
+	const auto TextureHeight = Texture->GetSizeY();
 	const FVector2D TextureDrawPoint(
 		ViewportCenter.X - (TextureWidth / 2.f) + Spread.X,
 		ViewportCenter.Y - (TextureHeight / 2.f) + Spread.Y
