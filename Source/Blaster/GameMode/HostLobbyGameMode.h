@@ -16,6 +16,8 @@ class BLASTER_API AHostLobbyGameMode : public AGameMode
 {
 	GENERATED_BODY()
 public:
+	AHostLobbyGameMode();
+	
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	// Uses seamless travel.
 	void TryStartMatch();

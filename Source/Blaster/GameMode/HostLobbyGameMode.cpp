@@ -6,6 +6,11 @@
 #include "Blaster/PlayerController/LobbyPlayerController.h"
 #include "GameFramework/GameStateBase.h"
 
+AHostLobbyGameMode::AHostLobbyGameMode()
+{
+	bUseSeamlessTravel = true;
+}
+
 void AHostLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
@@ -22,6 +27,9 @@ void AHostLobbyGameMode::PostLogin(APlayerController* NewPlayer)
 
 void AHostLobbyGameMode::TryStartMatch()
 {
+	UE_LOG(LogGameMode, Warning, TEXT("Level path: %s | IsNull: %d"), *Level.ToString(), Level.IsNull() ? 1 : 0);
+	UE_LOG(LogGameMode, Warning, TEXT("PackageName: %s"), *Level.ToSoftObjectPath().GetLongPackageName());
+	
 	if (Level.IsNull())
 	{
 		UE_LOG(LogGameMode, Error, TEXT("ERROR: Level is null. %s"), *GetNameSafe(this))
@@ -38,8 +46,6 @@ void AHostLobbyGameMode::TryStartMatch()
 	bUseSeamlessTravel = true;
 	if (auto World = GetWorld())
 	{
-		World->ServerTravel(
-			FString::Printf(TEXT("%s?listen"),
-			                *Level.ToSoftObjectPath().GetLongPackageName()));
+		World->ServerTravel(Level.ToSoftObjectPath().GetLongPackageName());
 	}
 }
