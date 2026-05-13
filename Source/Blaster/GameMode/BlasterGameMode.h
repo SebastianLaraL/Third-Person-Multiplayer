@@ -43,6 +43,7 @@ public:
 	
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	/** Setup and start a timer when level starts (no gameplay).*/
 	virtual void HandleMatchIsWaitingToStart() override;
@@ -52,4 +53,6 @@ protected:
 	virtual void OnMatchStateSet() override;
 private:
 	FTimerHandle WarmupStateTimer;
+	FTimerHandle RestartGameTimer;
+	FTimerHandle MatchStartedTimer;
 };

@@ -17,6 +17,7 @@ namespace MatchState
 ABlasterGameMode::ABlasterGameMode()
 {
 	bDelayedStart = true;
+	bUseSeamlessTravel = true;
 }
 
 void ABlasterGameMode::BeginPlay()
@@ -25,15 +26,22 @@ void ABlasterGameMode::BeginPlay()
 	LevelStartingTime = GetWorld()->GetTimeSeconds();
 }
 
+void ABlasterGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UE_LOG(LogGameMode, Warning, TEXT("End-Play-Reason: %d"), EndPlayReason)
+	GetWorldTimerManager().ClearAllTimersForObject(this);
+	Super::EndPlay(EndPlayReason);
+}
+
 void ABlasterGameMode::HandleMatchIsWaitingToStart()
 {
-	/** Setup and start a timer when level starts (no gameplay).*/
 	
+	// Setup and start a timer when level starts (no gameplay).
 	
 	Super::HandleMatchIsWaitingToStart();
 
-	/** Lambda */
-	FTimerDelegate TimerCallback = FTimerDelegate::CreateLambda([this]()
+	// Lambda
+	FTimerDelegate TimerCallback = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		// Run only the first time the match starts.
 		if (!HasMatchStarted())
@@ -43,7 +51,6 @@ void ABlasterGameMode::HandleMatchIsWaitingToStart()
 			GetWorldTimerManager().ClearTimer(WarmupStateTimer);
 		}
 	});
-
 	// Run a timer to start match.
 	GetWorldTimerManager().SetTimer(WarmupStateTimer, TimerCallback, WarmupTime, false);
 }
@@ -52,21 +59,16 @@ void ABlasterGameMode::HandleMatchHasStarted()
 {
 	/** Setup and start a timer when match begins to transition to State Cooldown.*/
 	
-	
 	Super::HandleMatchHasStarted();
 
-	FTimerHandle TimerHandle;
-
-	/** Lambda */
-	FTimerDelegate TimerCallback = FTimerDelegate::CreateLambda([this]()
+	// Lambda
+	FTimerDelegate TimerCallback = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		// Clear all the timers of this object to avoid issues.
-		GetWorldTimerManager().ClearAllTimersForObject(this);
 		// Set state to Cooldown to display winner.
 		SetMatchState(MatchState::Cooldown);
 	});
 	
-	GetWorldTimerManager().SetTimer(TimerHandle, TimerCallback, MatchTime, false);
+	GetWorldTimerManager().SetTimer(MatchStartedTimer, TimerCallback, MatchTime, false);
 }
 
 void ABlasterGameMode::OnMatchStateSet()
@@ -81,22 +83,16 @@ void ABlasterGameMode::OnMatchStateSet()
 			BlasterPlayerController->OnMatchStateSet(MatchState);
 		}
 	}
-	/** When changing to Cooldown state, start a timer to restart game. */
+	// When changing to Cooldown state, start a timer to restart game.
 	if (MatchState == MatchState::Cooldown)
 	{
-		
-		FTimerHandle TimerHandle;
-
 		 // Lambda 
-		FTimerDelegate TimerCallback = FTimerDelegate::CreateLambda([this]()
+		FTimerDelegate TimerCallback = FTimerDelegate::CreateWeakLambda(this,[this]()
 		{
-			// Clear all the timers of this object to avoid issues.
-			GetWorldTimerManager().ClearAllTimersForObject(this);
-			UE_LOG(LogStats, Display, TEXT("RESTARTING GAME in %f"), CooldownTime)
-			// Restart game.
+			UE_LOG(LogGameMode, Display, TEXT("RESTARTING GAME in %f"), CooldownTime)
 			RestartGame();
 		});
-		GetWorldTimerManager().SetTimer(TimerHandle, TimerCallback, CooldownTime, false);
+		GetWorldTimerManager().SetTimer(RestartGameTimer, TimerCallback, CooldownTime, false);
 	}
 }
 
