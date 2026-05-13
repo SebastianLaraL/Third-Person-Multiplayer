@@ -87,12 +87,13 @@ void UBlasterAnimInstance::NativeUpdateAnimation(const float DeltaSeconds)
 				FName("RightHand"), RTS_World);
 			FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(RightHandTransform.GetLocation(), BlasterCharacter->GetHitTarget());
 			
-/*
- * Hand bone rotation to match weapon muzzle flash with hit target. DISCARDED.
- * 2 Solutions were found: 
- * First one actually rotated the weapon to look at the hit target but right hand was wrongly rotated so it looked broken.
- * The second (this was the chosen one) was that the weapon will not match the hit target but the hand will look normal.
- * 
+
+ // Hand bone rotation to match weapon muzzle flash with hit target. DISCARDED.
+ // 2 Solutions were found: 
+ // First one actually rotated the weapon to look at the hit target but right hand was wrongly rotated so it looked broken.
+ // The second (this was the chosen one) was that the weapon will not match the hit target but the hand will look normal.
+ // 
+			/*
 			RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaSeconds, 30.f);
 			
 			const FTransform MuzzleTipTransform = EquippedWeapon->GetMesh()->GetSocketTransform(FName("MuzzleFlash"), RTS_World);
@@ -104,7 +105,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(const float DeltaSeconds)
 			// The trace impact location (center of the viewport).
 			DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), BlasterCharacter->GetHitTarget(),
 			              FColor::Purple);
-			              
+			   /*           
  * In case you want to use this, remember you still need to use the transform node in the anim blueprint and set the
  * rotation param with in World Space and Replace Existing options for the right hand bone (or the one you want to modify).
 */

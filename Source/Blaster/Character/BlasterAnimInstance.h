@@ -83,12 +83,11 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	ETurningInPlace TurningInPlace;
 
-	/* Hand Correction 
-	Removed because bone was rotated incorrectly.
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	FRotator RightHandRotation;
-
-	*/
+	// Hand Correction 
+	//Removed because bone was rotated incorrectly.
+	// UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	// FRotator RightHandRotation;
+	
 
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	bool bLocallyControlled;
