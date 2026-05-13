@@ -315,6 +315,7 @@ void ABlasterCharacter::Move(const FInputActionValue& Value)
 
 void ABlasterCharacter::Turn(const FInputActionValue& Value)
 {
+	if (bDisableGameplay) return;
 	const FVector2D Val = Value.Get<FVector2D>();
 	AddControllerYawInput(Val.X);
 	// Negate Y axis.
