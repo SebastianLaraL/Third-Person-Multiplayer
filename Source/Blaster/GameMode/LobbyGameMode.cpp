@@ -5,18 +5,18 @@
 
 #include "GameFramework/GameStateBase.h"
 
-void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
+void ADEPRECATED_LobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 	
 	// Change from lobby to Gameplay level if we have enough players./
 	int32 NumberOfPlayers = GameState.Get()->PlayerArray.Num();
-	if (NumberOfPlayers == 2) // TODO: 2 is not strictly necessary.
+	if (NumberOfPlayers == 3) // TODO: 2 is not strictly necessary.
 	{
 		if (UWorld* const World = GetWorld())
 		{
 			bUseSeamlessTravel = true;
-			World->ServerTravel(FString("/Game/Maps/BlasterMap?listen"));
+			World->ServerTravel(FString(/*"/Game/Maps/BlasterMap?listen"*/ /*"/Game/Maps/BlasterMapLowPoly?listen"*/"/Game/Maps/LowPolyOnly?listen"));
 		}
 	}
 }
