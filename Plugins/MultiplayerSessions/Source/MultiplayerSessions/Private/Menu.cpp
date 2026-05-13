@@ -45,6 +45,12 @@ void UMenu::MenuSetupByPath(FString LobbyPath, int32 NumberOfPublicConnections, 
 
 void UMenu::MenuSetupByLevel(TSoftObjectPtr<UWorld> Level, int32 NumberOfPublicConnections, FString TypeOfMatch)
 {
+	UE_LOG(LogSlate, Warning, TEXT("Level path: %s | IsNull: %d"),
+	*Level.ToString(),
+	Level.IsNull() ? 1 : 0);
+	UE_LOG(LogTemp, Warning, TEXT("PackageName: %s"),
+	*Level.ToSoftObjectPath().GetLongPackageName());
+	
 	// Make sure Level is valid, otherwise log and return.
 	if (Level.IsNull())
 	{
