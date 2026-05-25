@@ -23,18 +23,23 @@ class BLASTER_API UHealthComponent : public UActorComponent
 
 public:	
 	UHealthComponent();
+	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	FHealthChangedSignature OnHealthChanged;
 	
+	void StartHealing(const float HealAmount, const float HealTime);
+	
 protected:
-	virtual void BeginPlay() override;
 	
 	UFUNCTION()
 	virtual void ReceiveDamage(AActor* DamagedActor, float Damage, const /*class*/ UDamageType* DamageType, /*class*/ AController* InstigatedBy, AActor* DamageCauser);
 	
 	UFUNCTION()
 	virtual void OnRep_Health(float OldHealth);
+	
+	void HealTick();
+	
 private:
 	
 	/*
@@ -47,9 +52,18 @@ private:
 	UPROPERTY(EditAnywhere, Category = Health, meta = (ClampMin = 0.00001))
 	float MaxHealth = 100.f;
 	
+	FTimerHandle HealTimerHandle;
+	float RemainingHealAmount = 0.f;
+	float HealingRate = 0.f;
+	float EndResultingHealth = 0.f;
+	
+	// Speed at which we update the health when healing (using timers).
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health|Healing", meta = (AllowPrivateAccess = true, ClampMin = 0.0166, ForceUnits = "Seconds"))
+	float HealTickInterval = 0.1;
+	
 	// The instigator controller of the last damage taken event.
 	// Saved to call on OnRep_Health.
-	TObjectPtr<AController> LastInstigatorController = nullptr;
+	TWeakObjectPtr<AController> LastInstigatorController = nullptr;
 public:
 	
 	UFUNCTION(BlueprintPure, Category = Health)
