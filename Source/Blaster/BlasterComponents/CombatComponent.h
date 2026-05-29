@@ -32,6 +32,7 @@ class BLASTER_API UCombatComponent : public UActorComponent
 public:
 	friend class ABlasterCharacter;
 	UCombatComponent();
+	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
@@ -39,6 +40,7 @@ public:
 	void Reload();
 	void FireButtonPressed(bool bPressed);
 	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
+	void SetSpeeds(const float InBaseSpeed, const float InCrouchSpeed);
 	
 	// Designed to be called from notifies. Set combat state to Unoccupied in server.
 	UFUNCTION(BlueprintCallable)
@@ -66,7 +68,7 @@ public:
 	TObjectPtr<USoundCue> ZoomOutSniperRifle;
 
 protected:
-	virtual void BeginPlay() override;
+	
 	void SetAiming(bool NewAiming);
 
 	UFUNCTION(Server, Reliable)

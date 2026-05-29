@@ -3,6 +3,7 @@
 
 #include "BuffComponent.h"
 
+#include "CombatComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -84,6 +85,14 @@ void UBuffComponent::ClientPlayLocalSound_Implementation(USoundBase* Sound)
 void UBuffComponent::MulticastSpeedBuff_Implementation(const float BaseSpeed, const float CrouchSpeed)
 {
 	SetMovementSpeeds(BaseSpeed, CrouchSpeed);
+	
+	if (Character)
+	{
+		if (const auto CombatComponent = Character->FindComponentByClass<UCombatComponent>())
+		{
+			CombatComponent->SetSpeeds(BaseSpeed, CrouchSpeed);
+		}
+	}
 }
 
 //~ End Speed Buff section.

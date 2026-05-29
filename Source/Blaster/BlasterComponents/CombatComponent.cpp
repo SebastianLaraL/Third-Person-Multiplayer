@@ -65,6 +65,15 @@ void UCombatComponent::BeginPlay()
 	}
 }
 
+void UCombatComponent::SetSpeeds(const float InBaseSpeed, const float InCrouchSpeed)
+{
+	if (!Character || !Character->GetCharacterMovement()) return;
+	BaseWalkSpeed = InBaseSpeed;
+	AimWalkSpeed = InBaseSpeed;
+	
+	Character->GetCharacterMovement()->MaxWalkSpeedCrouched = InCrouchSpeed;
+}
+
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                      FActorComponentTickFunction* ThisTickFunction)
 {
