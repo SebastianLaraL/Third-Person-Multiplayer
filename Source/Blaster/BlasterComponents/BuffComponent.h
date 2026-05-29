@@ -8,6 +8,8 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogBuffs, Log, All);
 
+class USoundCue;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BLASTER_API UBuffComponent : public UActorComponent
 {
@@ -34,8 +36,16 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSpeedBuff(const float BaseSpeed, const float CrouchSpeed);
 	
+	UFUNCTION(Client, Reliable)
+	void ClientPlayLocalSound(USoundBase* Sound);
+	
 	// Speed related.
 	float InitialBaseSpeed;
 	float InitialCrouchSpeed;
 	FTimerHandle SpeedBuffTimer;
+	
+	// Sound to play when the buff speed ends.
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USoundCue> BuffSpeedEndSound;
+	
 };

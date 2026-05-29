@@ -5,6 +5,8 @@
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 DEFINE_LOG_CATEGORY(LogBuffs)
 
@@ -54,6 +56,7 @@ void UBuffComponent::BuffSpeed(const float BuffBaseSpeed, const float BuffCrouch
 		UE_LOG(LogBuffs, Display, TEXT(" Restored Initial Speeds: %f Base. %f crouched"), Character->GetCharacterMovement()->MaxWalkSpeed, Character->GetCharacterMovement()->MaxWalkSpeedCrouched)
 		MulticastSpeedBuff(InitialBaseSpeed, InitialCrouchSpeed);
 		UE_LOG(LogBuffs, Display, TEXT("Speed back to normal"))
+		ClientPlayLocalSound(BuffSpeedEndSound);
 	});
 	const float BuffDuration = BuffSpeedDuration < 0.f ? 0.0f : BuffSpeedDuration;
 	UE_LOG(LogBuffs,Display,TEXT("Calculated duration: %f"),BuffDuration);
@@ -67,6 +70,14 @@ void UBuffComponent::SetMovementSpeeds(const float BaseSpeed, const float Crouch
 		Character->GetCharacterMovement()->MaxWalkSpeed = BaseSpeed;
 		Character->GetCharacterMovement()->MaxWalkSpeedCrouched = CrouchSpeed;
 		UE_LOG(LogBuffs, Display, TEXT("Buffed speeds. Curr value: %f BASE, %f Crouch"), Character->GetCharacterMovement()->MaxWalkSpeed, Character->GetCharacterMovement()->MaxWalkSpeedCrouched)
+	}
+}
+
+void UBuffComponent::ClientPlayLocalSound_Implementation(USoundBase* Sound)
+{
+	if (Sound)
+	{
+		UGameplayStatics::PlaySound2D(this, Sound);
 	}
 }
 
