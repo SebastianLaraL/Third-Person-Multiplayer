@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "BuffComponent.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogBuffs, Log, All);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BLASTER_API UBuffComponent : public UActorComponent
@@ -15,7 +16,26 @@ class BLASTER_API UBuffComponent : public UActorComponent
 public:
 	UBuffComponent();
 	virtual void BeginPlay() override;
-
+	
+	// Speed related.
+	void SetInitialSpeeds(const float BaseSpeed, const float CrouchSpeed);
+	
+	// This sets the speed to the corresponding value (not addition).
+	// Setting Duration to a negative value will be clamped to zero.
+	UFUNCTION(BlueprintCallable)
+	void BuffSpeed(const float BuffBaseSpeed, const float BuffCrouchSpeed, const float BuffSpeedDuration);
+	
+	
 	UPROPERTY()
 	TObjectPtr<ACharacter> Character;
+private:
+	void SetMovementSpeeds(const float BaseSpeed, const float CrouchSpeed) const;
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSpeedBuff(const float BaseSpeed, const float CrouchSpeed);
+	
+	// Speed related.
+	float InitialBaseSpeed;
+	float InitialCrouchSpeed;
+	FTimerHandle SpeedBuffTimer;
 };
