@@ -6,6 +6,8 @@
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 APickup::APickup()
 {
@@ -28,6 +30,9 @@ APickup::APickup()
 	Mesh->SetCustomDepthStencilValue(250);
 	
 	bReplicates = true;
+	
+	PickupEffectComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Pickup Effect Comp"));
+	PickupEffectComponent->SetupAttachment(RootComponent);
 }
 
 void APickup::Destroyed()
@@ -38,6 +43,7 @@ void APickup::Destroyed()
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, SoftPickupSound.LoadSynchronous(), GetActorLocation());
 	}
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, PickupEffect, GetActorLocation(), GetActorRotation());
 }
 
 void APickup::BeginPlay()

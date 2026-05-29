@@ -8,6 +8,8 @@
 
 class USphereComponent;
 class USoundCue;
+class UNiagaraSystem;
+class UNiagaraComponent;
 /*
  * Pickup actor base class.
  * This actor destroys when overlapping with a pawn and plays a 3D sound.
@@ -33,6 +35,12 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UStaticMeshComponent> Mesh;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UNiagaraComponent> PickupEffectComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UNiagaraSystem> PickupEffect;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = true))
 	TSoftObjectPtr<USoundCue> SoftPickupSound;
