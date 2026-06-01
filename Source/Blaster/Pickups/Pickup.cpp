@@ -9,6 +9,8 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 
+DEFINE_LOG_CATEGORY(LogPickup)
+
 APickup::APickup()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -58,5 +60,6 @@ void APickup::BeginPlay()
 
 void APickup::OnBeginOverlapCallback(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	UE_LOG(LogPickup, Display, TEXT("Pickup Begin overlap event for item: %s"), *GetNameSafe(this))
 	Destroy();
 }

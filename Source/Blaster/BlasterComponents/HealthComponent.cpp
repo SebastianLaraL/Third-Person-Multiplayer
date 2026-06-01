@@ -38,7 +38,31 @@ void UHealthComponent::StartHealing(const float HealAmount, const float HealTime
 	HealingRate = HealAmount / HealTime;
 	EndResultingHealth = FMath::Clamp(CurrentHealth + HealAmount, 0.f, MaxHealth);
 	
+	LastInstigatorController = nullptr; // Clean the Instigator controller reference (since we are healing previous instigator reference is not necessary anymore). 
+	
 	GetWorld()->GetTimerManager().SetTimer(HealTimerHandle, this, &ThisClass::HealTick, HealTickInterval, true);
+}
+
+void UHealthComponent::StartReplenishingShield(const float ShieldAmount, const float ShieldTime)
+{
+	UE_LOG(LogHealthComponent, Display, TEXT("Starting replenishing shield. Waiting for validation..."))
+	if (!GetOwner()->HasAuthority() || IsDead())
+	{
+		return;
+	}
+	if (CurrentShield >= MaxShield)
+	{
+		return;
+	}
+	UE_LOG(LogHealthComponent, Display, TEXT("Starting replenishing shield. Validated!"))
+	
+	RemainingReplenishShieldAmount = ShieldAmount;
+	ReplenishingShieldRate = ShieldAmount / ShieldTime;
+	EndResultingShield = FMath::Clamp(CurrentShield + ShieldAmount, 0.f, MaxShield);
+	
+	LastInstigatorController = nullptr; // Clean the Instigator controller reference (since we are replenishing shield previous instigator reference is not necessary anymore).
+	
+	GetWorld()->GetTimerManager().SetTimer(ReplenishShieldTimerHandle, this, &ThisClass::ReplenishShieldTick, ReplenishShieldTickInterval, true);
 }
 
 void UHealthComponent::BeginPlay()
@@ -121,5 +145,43 @@ void UHealthComponent::HealTick()
 	RemainingHealAmount -= ActualHealAmount;
 	
 	OnHealthChanged.Broadcast(CurrentHealth, CurrentHealth - OldHealth, nullptr);
+}
+
+void UHealthComponent::ReplenishShieldTick()
+{
+	UE_LOG(LogHealthComponent, Display, TEXT("Started ticking replenish shield. Waiting for validation..."))
+	if (!GetOwner()->HasAuthority()) return;
+	UE_LOG(LogHealthComponent, Display, TEXT("Started ticking replenish shield. Validated!"))
 	
+	if (IsDead() || RemainingReplenishShieldAmount <= 0.f)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(ReplenishShieldTimerHandle);
+		CurrentShield = EndResultingShield; // Make sure the shield is set to the right final value. This is necessary due to floating-point precision issues.
+		
+		UE_LOG(LogHealthComponent, Warning/*Display*/, TEXT("Cleaning Replenish timer... Done"))
+		
+		return;
+	}
+	const float OldShield = CurrentShield;
+	
+	const float ReplenishThisTick = ReplenishingShieldRate * ReplenishShieldTickInterval;
+	const float ActualReplenishAmount = FMath::Min(ReplenishThisTick,RemainingReplenishShieldAmount);
+	
+	CurrentShield = FMath::Clamp(CurrentShield + ActualReplenishAmount, 0.f, MaxShield);
+	
+	RemainingReplenishShieldAmount -= ActualReplenishAmount;
+	
+	UE_LOG(LogHealthComponent, Display, TEXT(" Cleaning timer was not called... Printing all calculated values..."))
+	
+	UE_LOG(LogHealthComponent, Display, TEXT(" OLD SHIELD: %f"), OldShield)
+	UE_LOG(LogHealthComponent, Display, TEXT(" ReplenishThisTick: %f"), ReplenishThisTick)
+	
+	UE_LOG(LogHealthComponent, Display, TEXT(" ActualReplenishAmount: %f"), ActualReplenishAmount)
+	UE_LOG(LogHealthComponent, Display, TEXT(" CurrentShield after clamping: %f"), CurrentShield)
+	UE_LOG(LogHealthComponent, Display, TEXT(" RemainingReplenishShieldAmount: %f"), RemainingReplenishShieldAmount)
+	
+	
+	OnShieldChanged.Broadcast(CurrentShield, CurrentShield - OldShield, nullptr);
+	
+	UE_LOG(LogHealthComponent, Display, TEXT("Broadcasted values: New shield: %f. Delta shield: %f"), CurrentShield, CurrentShield - OldShield)
 }

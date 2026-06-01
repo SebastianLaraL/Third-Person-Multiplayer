@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Pickup.generated.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogPickup, Log, All)
+
 class USphereComponent;
 class USoundCue;
 class UNiagaraSystem;

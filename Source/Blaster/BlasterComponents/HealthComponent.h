@@ -30,6 +30,7 @@ public:
 	FHealthChangedSignature OnShieldChanged;
 	
 	void StartHealing(const float HealAmount, const float HealTime);
+	void StartReplenishingShield(const float ShieldAmount, const float ShieldTime);
 	
 protected:
 	
@@ -43,6 +44,8 @@ protected:
 	virtual void OnRep_Shield(float OldShield);
 	
 	void HealTick();
+	
+	void ReplenishShieldTick();
 	
 private:
 	
@@ -69,9 +72,18 @@ private:
 	float HealingRate = 0.f;
 	float EndResultingHealth = 0.f;
 	
+	FTimerHandle ReplenishShieldTimerHandle;
+	float RemainingReplenishShieldAmount = 0.f;
+	float ReplenishingShieldRate = 0.f;
+	float EndResultingShield = 0.f;
+	
 	// Speed at which we update the health when healing (using timers).
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health|Healing", meta = (AllowPrivateAccess = true, ClampMin = 0.0166, ForceUnits = "Seconds"))
 	float HealTickInterval = 0.1;
+	
+	// Speed at which we update the shield when Replenishing (using timers).
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shield|Replanish", meta = (AllowPrivateAccess = true, ClampMin = 0.0166, ForceUnits = "Seconds"))
+	float ReplenishShieldTickInterval = 0.1;
 	
 	// The instigator controller of the last damage taken event.
 	// Saved to call on OnRep_Health.
