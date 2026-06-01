@@ -8,7 +8,7 @@
 
 class AController;
 
-
+DECLARE_LOG_CATEGORY_EXTERN(LogHealthComponent, Log, All);
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FHealthChangedSignature, float NewHealth, float DeltaHealth, AController* InstigatorController);
 
 /*
@@ -27,6 +27,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	FHealthChangedSignature OnHealthChanged;
+	FHealthChangedSignature OnShieldChanged;
 	
 	void StartHealing(const float HealAmount, const float HealTime);
 	
@@ -37,6 +38,9 @@ protected:
 	
 	UFUNCTION()
 	virtual void OnRep_Health(float OldHealth);
+	
+	UFUNCTION()
+	virtual void OnRep_Shield(float OldShield);
 	
 	void HealTick();
 	
@@ -51,6 +55,14 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = Health, meta = (ClampMin = 0.00001))
 	float MaxHealth = 100.f;
+	
+	// Shield.
+	// Originally I did not design this component to support shields, but it would complicate things to create a separate Shield component and a new damage system.
+	UPROPERTY(ReplicatedUsing = OnRep_Shield, EditDefaultsOnly, Category = Shield, meta = (ClampMin = 0.1f))
+	float CurrentShield = 100.f;
+	
+	UPROPERTY(EditAnywhere, Category = Shield, meta = (ClampMin = 0.1f))
+	float MaxShield = 100.f;
 	
 	FTimerHandle HealTimerHandle;
 	float RemainingHealAmount = 0.f;
@@ -71,6 +83,12 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = Health)
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	
+	UFUNCTION(BlueprintPure, Category = Health)
+	FORCEINLINE float GetCurrentShield() const { return CurrentShield; }
+	
+	UFUNCTION(BlueprintPure, Category = Health)
+	FORCEINLINE float GetMaxShield() const { return MaxShield; }
 	
 	UFUNCTION(BlueprintPure, Category = Health)
 	FORCEINLINE bool IsDead() const { return CurrentHealth <= 0.f; }

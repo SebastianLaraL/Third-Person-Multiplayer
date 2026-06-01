@@ -6,6 +6,7 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Controller.h" 
 
+DEFINE_LOG_CATEGORY(LogHealthComponent)
 
 UHealthComponent::UHealthComponent()
 {
@@ -18,6 +19,7 @@ void UHealthComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(UHealthComponent, CurrentHealth);
+	DOREPLIFETIME(UHealthComponent, CurrentShield);
 }
 
 
@@ -53,16 +55,50 @@ void UHealthComponent::BeginPlay()
 void UHealthComponent::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 	AController* InstigatedBy, AActor* DamageCauser)
 {
+	UE_LOG(LogHealthComponent, Display, TEXT("Called receive damage."))
+	
 	if (IsDead()) return;
-	const float OldHealth = CurrentHealth;
-	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
+	
 	LastInstigatorController = InstigatedBy;
-	OnHealthChanged.Broadcast(CurrentHealth, CurrentHealth - OldHealth, LastInstigatorController.Get());
+	const float OldHealth = CurrentHealth;
+	float DamageToApplyToHealth = Damage;
+	
+	if (CurrentShield > 0.f)
+	{
+		const float OldShield = CurrentShield;
+		
+		if (CurrentShield >= Damage) // Enough shield, health is unaffected.
+		{
+			CurrentShield = FMath::Clamp(CurrentShield - Damage, 0.f, MaxShield);
+			DamageToApplyToHealth = 0.f;
+			UE_LOG(LogHealthComponent, Display, TEXT("Current shield set to: %f"), CurrentShield)
+		}
+		else // Shield is too low, apply health damage as well.
+		{
+			DamageToApplyToHealth = Damage - CurrentShield;
+			CurrentShield = 0.f;
+		}
+		OnShieldChanged.Broadcast(CurrentShield, CurrentShield - OldShield, LastInstigatorController.Get());
+		UE_LOG(LogHealthComponent, Display, TEXT("Current shield set to: %f"), CurrentShield)
+	}
+	
+	if (DamageToApplyToHealth > 0.f)
+	{
+		CurrentHealth = FMath::Clamp(CurrentHealth - DamageToApplyToHealth, 0.f, MaxHealth);
+		OnHealthChanged.Broadcast(CurrentHealth, CurrentHealth - OldHealth, LastInstigatorController.Get());
+	}
 }
 
 void UHealthComponent::OnRep_Health(float OldHealth)
 {
+	UE_LOG(LogHealthComponent, Display, TEXT("Health set to: %f"), CurrentHealth)
 	OnHealthChanged.Broadcast(CurrentHealth, CurrentHealth - OldHealth, LastInstigatorController.Get());
+}
+
+void UHealthComponent::OnRep_Shield(float OldShield)
+{
+	UE_LOG(LogHealthComponent, Display, TEXT("Shield set to: %f"), CurrentShield)
+	OnShieldChanged.Broadcast(CurrentShield, CurrentShield - OldShield, LastInstigatorController.Get());
 }
 
 void UHealthComponent::HealTick()

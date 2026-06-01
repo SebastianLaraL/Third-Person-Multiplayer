@@ -194,6 +194,7 @@ private:
 	void PlayMontage(UAnimMontage* const Montage) const;
 	
 	void OnHealthChanged(float NewHealth, float DeltaHealth, AController* InstigatorController);
+	void OnShieldChanged(float NewShield, float DeltaShield, AController* InstigatorController);
 	
 	FTimerHandle ElimTimer;
 	

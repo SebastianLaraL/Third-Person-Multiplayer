@@ -299,6 +299,7 @@ void ABlasterCharacter::BeginPlay()
 	if (HealthComponent)
 	{
 		HealthComponent->OnHealthChanged.AddUObject(this, &ABlasterCharacter::OnHealthChanged);
+		HealthComponent->OnShieldChanged.AddUObject(this, &ABlasterCharacter::OnShieldChanged);
 	}
 	if (GrenadeMesh) // Hide attached grenade mesh.
 	{
@@ -615,13 +616,33 @@ void ABlasterCharacter::OnHealthChanged(float NewHealth, float DeltaHealth, ACon
 		{
 			BlasterPlayerController = Cast<ABlasterPlayerController>(Controller);
 		}
-		const auto AttackerController = Cast<ABlasterPlayerController>(InstigatorController
-		);
+		const auto AttackerController = Cast<ABlasterPlayerController>(InstigatorController);
+		
 		BlasterGameMode->PlayerEliminated(this,
 		                                  BlasterPlayerController ? BlasterPlayerController : nullptr,
 		                                  AttackerController ? AttackerController : nullptr
 		);
 	}
+}
+
+void ABlasterCharacter::OnShieldChanged(float NewShield, float DeltaShield, AController* InstigatorController)
+{
+	UE_LOG(LogHealthComponent, Display, TEXT("Called OnShieldChanged from BlasterCharacter. New shield: %f. Delta shield: %f. GetCurrentShieldGetter: %f"), NewShield, DeltaShield, HealthComponent->GetCurrentShield());
+	
+	UpdateHUD();
+	
+	if (DeltaShield < 0) // Play only when receiving damage.
+	{
+		PlayHitReactMontage();
+	}
+	if (!IsLocallyControlled()) return;
+
+	
+	// Update HUD Shield.
+	if (!BlasterPlayerController)
+		BlasterPlayerController = Cast<ABlasterPlayerController>(Controller);
+	else
+		BlasterPlayerController->SetHUDShield(NewShield, HealthComponent->GetMaxShield());
 }
 
 
@@ -638,6 +659,7 @@ void ABlasterCharacter::UpdateHUD()
 	if (!BlasterPlayerController) return;
 	// Double check to avoid issues with server travel. TODO: improve both readability and process itself.
 	BlasterPlayerController->SetHUDHealth(HealthComponent->GetCurrentHealth(), HealthComponent->GetMaxHealth());
+	BlasterPlayerController->SetHUDShield(HealthComponent->GetCurrentShield(), HealthComponent->GetMaxShield());
 }
 
 void ABlasterCharacter::Elim()
