@@ -27,6 +27,7 @@ public:
 	 * HUD
 	 */
 	void SetHUDHealth(float Health, float MaxHealth);
+	void SetHUDShield(const float Shield, const float MaxShield);
 	void SetHUDScore(const float Score);
 	void SetHUDDefeats(const int32 Defeats);
 	void SetHUDWeaponAmmo(const int32 Ammo);
@@ -134,7 +135,7 @@ private:
 	void TogglePauseMenu();
 	
 	// Avoid code duplication with these functions.
-	ABlasterHUD* EnsureBlasterHUD();
+	ABlasterHUD* ValidateBlasterHUD();
 	
 	bool HUDAndOverlayAreValid() const { return BlasterHUD && BlasterHUD->CharacterOverlay; }
 };

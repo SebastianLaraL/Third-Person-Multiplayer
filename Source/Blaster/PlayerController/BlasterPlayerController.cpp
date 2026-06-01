@@ -28,7 +28,7 @@ void ABlasterPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	ServerCheckMatchState();
 
@@ -116,7 +116,7 @@ void ABlasterPlayerController::ClientRestart_Implementation(class APawn* NewPawn
 
 void ABlasterPlayerController::SetHUDHealth(float Health, float MaxHealth)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	const bool bHUDValid = HUDAndOverlayAreValid() &&
 		BlasterHUD->CharacterOverlay->HealthBar &&
@@ -134,9 +134,29 @@ void ABlasterPlayerController::SetHUDHealth(float Health, float MaxHealth)
 	}
 }
 
+void ABlasterPlayerController::SetHUDShield(const float Shield, const float MaxShield)
+{
+	ValidateBlasterHUD();
+
+	const bool bHUDValid = HUDAndOverlayAreValid() &&
+		BlasterHUD->CharacterOverlay->ShieldBar &&
+		BlasterHUD->CharacterOverlay->ShieldText;
+
+	if (bHUDValid)
+	{
+		const float ShieldPercent = Shield / MaxShield;
+		// Progress bar Percent.
+		BlasterHUD->CharacterOverlay->ShieldBar->SetPercent(ShieldPercent);
+		// Text.
+		const FString ShieldText = FString::Printf(TEXT("%d/%d"), FMath::FloorToInt32(Shield),
+												   FMath::CeilToInt32(MaxShield));
+		BlasterHUD->CharacterOverlay->ShieldText->SetText(FText::FromString(ShieldText));
+	}
+}
+
 void ABlasterPlayerController::SetHUDScore(const float Score)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	if (HUDAndOverlayAreValid() && BlasterHUD->CharacterOverlay->ScoreAmount)
 	{
@@ -147,7 +167,7 @@ void ABlasterPlayerController::SetHUDScore(const float Score)
 
 void ABlasterPlayerController::SetHUDDefeats(const int32 Defeats)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	if (HUDAndOverlayAreValid() && BlasterHUD->CharacterOverlay->ScoreAmount)
 	{
@@ -158,7 +178,7 @@ void ABlasterPlayerController::SetHUDDefeats(const int32 Defeats)
 
 void ABlasterPlayerController::SetHUDWeaponAmmo(const int32 Ammo)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	if (HUDAndOverlayAreValid() && BlasterHUD->CharacterOverlay->WeaponAmmoAmount)
 	{
@@ -169,7 +189,7 @@ void ABlasterPlayerController::SetHUDWeaponAmmo(const int32 Ammo)
 
 void ABlasterPlayerController::SetHUDWeaponCarriedAmmo(const int32 CarriedAmmo)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	if (HUDAndOverlayAreValid() && BlasterHUD->CharacterOverlay->CarriedAmmoAmount)
 	{
@@ -180,7 +200,7 @@ void ABlasterPlayerController::SetHUDWeaponCarriedAmmo(const int32 CarriedAmmo)
 
 void ABlasterPlayerController::SetHUDEquippedWeaponName(const EWeaponType WeaponType)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	if (HUDAndOverlayAreValid() && BlasterHUD->CharacterOverlay->EquippedWeaponName)
 	{
@@ -211,7 +231,7 @@ void ABlasterPlayerController::SetHUDEquippedWeaponName(const EWeaponType Weapon
 
 void ABlasterPlayerController::SetHUDMatchCountdown(const float CountdownTime)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	if (HUDAndOverlayAreValid() && BlasterHUD->CharacterOverlay->MatchCountDownText)
 	{
@@ -239,7 +259,7 @@ void ABlasterPlayerController::SetHUDMatchCountdown(const float CountdownTime)
 
 void ABlasterPlayerController::SetHUDAnnouncementCountdown(const float CountdownTime)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	const bool bHUDValid = BlasterHUD && BlasterHUD->Announcement && BlasterHUD->Announcement->WarmupTime;
 	if (bHUDValid)
@@ -259,7 +279,7 @@ void ABlasterPlayerController::SetHUDAnnouncementCountdown(const float Countdown
 
 void ABlasterPlayerController::SetHUDSniperScope(const bool bIsAiming)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	if (!BlasterHUD->SniperScope)
 	{
@@ -288,7 +308,7 @@ void ABlasterPlayerController::SetHUDSniperScope(const bool bIsAiming)
 
 void ABlasterPlayerController::SetHUDGrenades(const int32 Grenades)
 {
-	EnsureBlasterHUD();
+	ValidateBlasterHUD();
 
 	if (HUDAndOverlayAreValid() && BlasterHUD->CharacterOverlay->GrenadesText)
 	{
@@ -504,7 +524,7 @@ void ABlasterPlayerController::OnRep_MatchState()
 /** When match starts add character overlay and hide announcement text.*/
 void ABlasterPlayerController::HandleMatchHasStarted()
 {
-	if (EnsureBlasterHUD())
+	if (ValidateBlasterHUD())
 	{
 		BlasterHUD->AddCharacterOverlay();
 		// Hide announcement text. 
@@ -517,7 +537,7 @@ void ABlasterPlayerController::HandleMatchHasStarted()
 
 void ABlasterPlayerController::HandleCooldown()
 {
-	if (EnsureBlasterHUD())
+	if (ValidateBlasterHUD())
 	{
 		BlasterHUD->CharacterOverlay->RemoveFromParent(); // Remove overlay responsible for health, ammo, etc.
 
@@ -545,7 +565,7 @@ void ABlasterPlayerController::HandleCooldown()
 	}
 	
 	// Remove the pause menu in case it is displaying.
-	if (EnsureBlasterHUD() && BlasterHUD->PauseMenu && bPauseMenuOpen)
+	if (ValidateBlasterHUD() && BlasterHUD->PauseMenu && bPauseMenuOpen)
 	{
 		BlasterHUD->PauseMenu->RemoveFromParent();
 		bPauseMenuOpen = false;
@@ -570,7 +590,7 @@ void ABlasterPlayerController::TogglePauseMenu()
 		}
 	}
 	
-	if (!EnsureBlasterHUD() || !BlasterHUD->PauseMenuClass)
+	if (!ValidateBlasterHUD() || !BlasterHUD->PauseMenuClass)
 	{
 		return;
 	}
@@ -644,7 +664,7 @@ void ABlasterPlayerController::DisplayWinner() const
 	}
 }
 
-ABlasterHUD* ABlasterPlayerController::EnsureBlasterHUD()
+ABlasterHUD* ABlasterPlayerController::ValidateBlasterHUD()
 {
 	if (!IsValid(BlasterHUD))
 	{
