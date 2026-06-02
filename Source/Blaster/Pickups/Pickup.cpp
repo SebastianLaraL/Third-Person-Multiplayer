@@ -54,7 +54,8 @@ void APickup::BeginPlay()
 	
 	if (HasAuthority())
 	{
-		SphereComponent->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBeginOverlapCallback); // testing with Unique for the first time, not for a specific reason.
+		// Slight delay. If players overlap at the exact time of creation (APickupSpawnPoint), binding OnDestroyed will not be achieved and no more pickups will be spawned.
+		GetWorldTimerManager().SetTimer(BindOverlapTimer, this, &ThisClass::BindOverlapTimerFinished, BindOverlapTime);
 	}
 }
 
@@ -62,4 +63,9 @@ void APickup::OnBeginOverlapCallback(UPrimitiveComponent* OverlappedComponent, A
 {
 	UE_LOG(LogPickup, Display, TEXT("Pickup Begin overlap event for item: %s"), *GetNameSafe(this))
 	Destroy();
+}
+
+void APickup::BindOverlapTimerFinished()
+{
+	SphereComponent->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnBeginOverlapCallback);
 }

@@ -46,4 +46,8 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = true))
 	TSoftObjectPtr<USoundCue> SoftPickupSound;
+	
+	FTimerHandle BindOverlapTimer;
+	float BindOverlapTime = 0.25f; // Random number, you can modify it or even make it a UPROPERTY if you want.
+	void BindOverlapTimerFinished();
 };
