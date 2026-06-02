@@ -664,10 +664,17 @@ void ABlasterCharacter::UpdateHUD()
 
 void ABlasterCharacter::Elim()
 {
-	// Drop weapon.
+	// Destroy weapon if it is the default weapon, otherwise drop.
 	if (CombatComponent && CombatComponent->EquippedWeapon)
 	{
-		CombatComponent->EquippedWeapon->Drop();
+		if (CombatComponent->EquippedWeapon->bDestroyWeapon)
+		{
+			CombatComponent->EquippedWeapon->Destroy();
+		}
+		else
+		{
+			CombatComponent->EquippedWeapon->Drop();
+		}
 	}
 	MulticastElim();
 

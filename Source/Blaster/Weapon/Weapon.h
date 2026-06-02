@@ -45,7 +45,6 @@ public:
 	AWeapon();
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual void OnRep_Owner() override;
 	void SetHUDAmmo();
 	void ShowPickupWidget(bool bShowWidget);
 	/* Play Fire animation and spawn casings. */
@@ -105,8 +104,12 @@ public:
 	
 	void EnableCustomDepth(const bool bEnable);
 	
+	// Set to true when spawning if this is the default spawn weapon.
+	bool bDestroyWeapon = false;
+	
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnRep_Owner() override;
 
 	UFUNCTION()
 	virtual void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

@@ -275,4 +275,14 @@ private:
 	int32 MaxGrenades = 12;
 	
 	void UpdateHUDGrenades();
+	
+	// Default weapon.
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bShouldSpawnDefaultWeapon = true;
+	
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AWeapon> DefaultWeaponClass;
+	
+	void SpawnDefaultWeapon();
 };

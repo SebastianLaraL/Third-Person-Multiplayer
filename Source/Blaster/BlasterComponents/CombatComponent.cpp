@@ -63,6 +63,10 @@ void UCombatComponent::BeginPlay()
 			UpdateHUDGrenades();
 		}
 	}
+	if (bShouldSpawnDefaultWeapon)
+	{
+		SpawnDefaultWeapon();
+	}
 }
 
 void UCombatComponent::SetSpeeds(const float InBaseSpeed, const float InCrouchSpeed)
@@ -640,6 +644,21 @@ void UCombatComponent::UpdateHUDGrenades()
 	if (Controller = Controller ? Controller.Get() : Cast<ABlasterPlayerController>(Character->Controller); Controller)
 	{
 		Controller->SetHUDGrenades(Grenades);
+	}
+}
+
+void UCombatComponent::SpawnDefaultWeapon()
+{
+	if (!GetOwner()->HasAuthority()) return;
+	
+	const auto World = GetWorld();
+	if (!World) return;
+	
+	if (DefaultWeaponClass)
+	{
+		const auto StartingWeapon = World->SpawnActor<AWeapon>(DefaultWeaponClass);
+		StartingWeapon->bDestroyWeapon = true;
+		EquipWeapon(StartingWeapon);
 	}
 }
 
