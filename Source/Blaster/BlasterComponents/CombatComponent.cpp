@@ -30,6 +30,8 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty
 
 	// Replicate overlapping weapon.
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
+	// Replicate secondary weapon.
+	DOREPLIFETIME(ThisClass, SecondaryWeapon);
 	// Replicate aiming state.
 	DOREPLIFETIME(UCombatComponent, bIsAiming);
 	// Carried ammo replicated only on owner character (other objects do not need to know about the ammo we are carrying.
@@ -147,11 +149,29 @@ void UCombatComponent::OnRep_EquippedWeapon()
 		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 		Character->bUseControllerRotationYaw = true;
 		// Play sound when equipped.
-		PlayEquipWeaponSound();
+		PlayEquipWeaponSound(EquippedWeapon);
+		EquippedWeapon->EnableCustomDepth(false);
 		if (Controller)
 		{
 			Controller->SetHUDEquippedWeaponName(EquippedWeapon->GetWeaponType());
 		}
+	}
+}
+
+void UCombatComponent::OnRep_SecondaryWeapon()
+{
+	if (SecondaryWeapon && Character)
+	{
+		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+		AttachActorToBack(SecondaryWeapon);
+		PlayEquipWeaponSound(EquippedWeapon);
+		if (SecondaryWeapon->GetMesh())
+		{
+			SecondaryWeapon->GetMesh()->SetCustomDepthStencilValue(CUSTOM_DEPTH_TAN); // Secondary weapon color will be tan.
+			SecondaryWeapon->GetMesh()->MarkRenderStateDirty();
+		}
+		if (!EquippedWeapon) return;
+		EquippedWeapon->SetOwner(Character);
 	}
 }
 
@@ -428,8 +448,26 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if (!Character || !WeaponToEquip) return;
 	if (CombatState != ECombatState::ECS_Unoccupied) return;
+	
+	if (EquippedWeapon && !SecondaryWeapon)
+	{
+		EquipSecondaryWeapon(WeaponToEquip);
+	}
+	else
+	{
+		EquipPrimaryWeapon(WeaponToEquip);
+	}
+		
+	// Stop orienting rotation to movement. This is to allow leaning animations in animation blueprint.
+	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+	Character->bUseControllerRotationYaw = true;
+}
 
-	DropEquippedWeapon();
+void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
+{
+	if (!WeaponToEquip) return;
+	
+	DropEquippedWeapon(); // In this game picking up a weapon drops the previous primary weapon and replaces it with the new one.
 	EquippedWeapon = WeaponToEquip;
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 	
@@ -438,13 +476,25 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	EquippedWeapon->SetHUDAmmo();
 
 	UpdateCarriedAmmo();
-	PlayEquipWeaponSound();
-
-	ReloadEmptyWeapon();
+	PlayEquipWeaponSound(EquippedWeapon);
 	
-	// Stop orienting rotation to movement. This is to allow leaning animations in animation blueprint.
-	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-	Character->bUseControllerRotationYaw = true;
+	ReloadEmptyWeapon();
+	EquippedWeapon->EnableCustomDepth(false);
+}
+
+void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
+{
+	if (!WeaponToEquip) return;
+	
+	SecondaryWeapon = WeaponToEquip;
+	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+	AttachActorToBack(WeaponToEquip);
+	PlayEquipWeaponSound(WeaponToEquip);
+	if (SecondaryWeapon->GetMesh())
+	{
+		SecondaryWeapon->GetMesh()->SetCustomDepthStencilValue(CUSTOM_DEPTH_TAN);
+		SecondaryWeapon->GetMesh()->MarkRenderStateDirty();
+	}
 }
 
 void UCombatComponent::DropEquippedWeapon()
@@ -480,6 +530,22 @@ void UCombatComponent::AttachActorToLeftHand(const AActor* ActorToAttach) const
 	}
 }
 
+// If this causes a crash, make sure the skeletal mesh has the "BackSocket".
+void UCombatComponent::AttachActorToBack(AActor* ActorToAttach) const
+{
+	if (!Character || !Character->GetMesh() || !ActorToAttach) return;
+	if (const USkeletalMeshSocket* BackSocket = Character->GetMesh()->GetSocketByName(FName("BackSocket")))
+	{
+		BackSocket->AttachActor(ActorToAttach, Character->GetMesh());
+	}
+	else
+	{
+		UE_LOG(LogSkeletalMesh, Warning,
+		       TEXT("Combat component tried to attach actor %s to back of %s but BackSocket does not exist."),
+		       *ActorToAttach->GetName(), *Character->GetName());
+	}
+}
+
 void UCombatComponent::UpdateCarriedAmmo()
 {
 	if (!EquippedWeapon) return;
@@ -495,11 +561,11 @@ void UCombatComponent::UpdateCarriedAmmo()
 	}
 }
 
-void UCombatComponent::PlayEquipWeaponSound() const
+void UCombatComponent::PlayEquipWeaponSound(AWeapon* WeaponToEquip) const
 {
-	if (Character && EquippedWeapon && EquippedWeapon->EquipSound)
+	if (Character && WeaponToEquip && WeaponToEquip->EquipSound)
 	{
-		UGameplayStatics::SpawnSoundAtLocation(this, EquippedWeapon->EquipSound, Character->GetActorLocation());
+		UGameplayStatics::SpawnSoundAtLocation(this, WeaponToEquip->EquipSound, Character->GetActorLocation());
 	}
 }
 

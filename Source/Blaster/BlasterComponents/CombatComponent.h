@@ -77,6 +77,9 @@ protected:
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
 	
+	UFUNCTION()
+	void OnRep_SecondaryWeapon();
+	
 	void Fire();
 
 	UFUNCTION(Server, Reliable)
@@ -109,11 +112,14 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AProjectileGrenade> GrenadeClass;
 	
+	void EquipPrimaryWeapon(AWeapon* WeaponToEquip);
+	void EquipSecondaryWeapon(AWeapon* WeaponToEquip);
 	void DropEquippedWeapon();
 	void AttachActorToRightHand(const AActor* ActorToAttach) const;
 	void AttachActorToLeftHand(const AActor* ActorToAttach) const;
+	void AttachActorToBack(AActor* ActorToAttach) const; // Hardcoded "BackSocket".
 	void UpdateCarriedAmmo();
-	void PlayEquipWeaponSound() const;
+	void PlayEquipWeaponSound(AWeapon* WeaponToEquip) const;
 	void ReloadEmptyWeapon();
 	void ShowAttachedGrenade(const bool bShowGrenade) const;
 	
@@ -132,6 +138,10 @@ private:
 	UPROPERTY(ReplicatedUsing=OnRep_EquippedWeapon, VisibleAnywhere, BlueprintReadOnly, Category = Combat,
 		meta = (AllowPrivateAccess = true))
 	TObjectPtr<AWeapon> EquippedWeapon;
+	
+	UPROPERTY(ReplicatedUsing=OnRep_SecondaryWeapon, VisibleAnywhere, BlueprintReadOnly, Category = Combat,
+		meta = (AllowPrivateAccess = true))
+	TObjectPtr<AWeapon> SecondaryWeapon;
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = true))
 	bool bIsAiming;

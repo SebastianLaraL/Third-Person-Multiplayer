@@ -344,19 +344,7 @@ void ABlasterCharacter::EquipButtonPressed()
 {
 	if (bDisableGameplay) return;
 
-	if (CombatComponent)
-	{
-		// Case: Called from the server.
-		if (HasAuthority())
-		{
-			CombatComponent->EquipWeapon(OverlappingWeapon);
-		}
-		// Case: called from a client.
-		else
-		{
-			ServerEquipButtonPressed();
-		}
-	}
+	ServerEquipButtonPressed();
 }
 
 void ABlasterCharacter::AimStarted()
