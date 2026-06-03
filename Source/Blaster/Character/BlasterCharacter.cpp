@@ -135,7 +135,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	EnhancedInput->BindAction(CrouchInputAction, ETriggerEvent::Started, this, &ThisClass::HandleCrouchRequest);
 
 	// Bind Equip Weapon.
-	EnhancedInput->BindAction(EquipWeaponInputAction, ETriggerEvent::Triggered, this, &ThisClass::EquipButtonPressed);
+	EnhancedInput->BindAction(EquipWeaponInputAction, ETriggerEvent::Started, this, &ThisClass::EquipButtonPressed);
 
 	// Bind weapon combat.
 	EnhancedInput->BindAction(AimInputAction, ETriggerEvent::Started, this, &ThisClass::AimStarted);
