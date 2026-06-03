@@ -329,10 +329,13 @@ void ABlasterCharacter::Move(const FInputActionValue& Value)
 void ABlasterCharacter::Turn(const FInputActionValue& Value)
 {
 	if (bDisableGameplay) return;
+	if (!GetWorld()) return;
+	
 	const FVector2D Val = Value.Get<FVector2D>();
-	AddControllerYawInput(Val.X);
+	float DeltaTime = GetWorld()->GetDeltaSeconds();
+	AddControllerYawInput(Val.X * HorizontalRotationSensitivity * DeltaTime);
 	// Negate Y axis.
-	AddControllerPitchInput(-Val.Y);
+	AddControllerPitchInput(-Val.Y * VerticalRotationSensitivity * DeltaTime);
 }
 
 void ABlasterCharacter::HandleCrouchRequest()

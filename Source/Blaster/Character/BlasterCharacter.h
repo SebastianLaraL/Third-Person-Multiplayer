@@ -37,6 +37,7 @@ class BLASTER_API ABlasterCharacter : public ACharacter, public IInteractWithCro
 
 public:
 	ABlasterCharacter();
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
@@ -66,7 +67,6 @@ public:
 	void PlayThrowGrenadeMontage() const;
 	
 protected:
-	virtual void BeginPlay() override;
 
 	// Gameplay basic movement.
 	void Move(const FInputActionValue& Value);
@@ -296,6 +296,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	TObjectPtr<UInputAction> SwapWeaponInputAction;
 
+	// Rotation sensitivity.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay|Camera|Rotation", meta = (ClampMin = 0.f))
+	float HorizontalRotationSensitivity = 25.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay|Camera|Rotation", meta = (ClampMin = 0.f))
+	float VerticalRotationSensitivity = 25.f;
+	
 	/*~ Fin de seccion de inputs. */
 	
 	bool IsWeaponEquipped() const;
