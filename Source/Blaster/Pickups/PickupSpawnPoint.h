@@ -28,7 +28,7 @@ protected:
 	void SpawnPickupTimerFinished();
 	void SpawnPickup();
 	
-	// If set to false, the Pickup item will be spawned each SpawnPickupTimeMax seconds.
+	// If set to false, the Pickup item will be spawned every SpawnPickupTimeMax seconds.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bRandomSpawnTime = false;
 	
