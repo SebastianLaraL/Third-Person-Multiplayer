@@ -37,6 +37,7 @@ public:
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	void EquipWeapon(AWeapon* WeaponToEquip);
+	void SwapWeapons();
 	void Reload();
 	void FireButtonPressed(bool bPressed);
 	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
@@ -295,4 +296,7 @@ private:
 	TSubclassOf<AWeapon> DefaultWeaponClass;
 	
 	void SpawnDefaultWeapon();
+	
+public:
+	FORCEINLINE bool CanSwapWeapons() const { return EquippedWeapon && SecondaryWeapon; }
 };

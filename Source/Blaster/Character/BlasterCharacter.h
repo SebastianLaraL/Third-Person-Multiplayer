@@ -75,6 +75,9 @@ protected:
 
 	// Equipping Weapon.
 	void EquipButtonPressed();
+	
+	// Swap weapon.
+	void SwapButtonTriggered(const FInputActionValue& Value);
 
 	// Aiming weapon.
 	void AimStarted();
@@ -136,6 +139,9 @@ private:
 	// My first Server RPC!
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();
+	
+	UFUNCTION(Server, Reliable)
+	void ServerSwapWeaponTriggered();
 
 	float AO_Yaw;
 	float InterpAO_Yaw;
@@ -270,7 +276,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	TObjectPtr<UInputAction> EquipWeaponInputAction;
-
+	
 	// Aiming weapon input.
 	UPROPERTY(EditAnywhere, Category = Input)
 	TObjectPtr<UInputMappingContext> WeaponCombatInputMappingContext;
@@ -286,6 +292,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = Input)
 	TObjectPtr<UInputAction> ThrowGrenadeInputAction;
+	
+	UPROPERTY(EditAnywhere, Category = Input)
+	TObjectPtr<UInputAction> SwapWeaponInputAction;
 
 	/*~ Fin de seccion de inputs. */
 	

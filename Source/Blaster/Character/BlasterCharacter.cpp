@@ -144,6 +144,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	EnhancedInput->BindAction(FireInputAction, ETriggerEvent::Completed, this, &ThisClass::FireWeaponReleased);
 	EnhancedInput->BindAction(ReloadInputAction, ETriggerEvent::Started, this, &ThisClass::ReloadButtonPressed);
 	EnhancedInput->BindAction(ThrowGrenadeInputAction, ETriggerEvent::Started, this, &ThisClass::ThrowGrenadeButtonPressed);
+	EnhancedInput->BindAction(SwapWeaponInputAction, ETriggerEvent::Started, this, &ThisClass::SwapButtonTriggered);
 }
 
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -345,6 +346,14 @@ void ABlasterCharacter::EquipButtonPressed()
 	if (bDisableGameplay) return;
 
 	ServerEquipButtonPressed();
+}
+
+void ABlasterCharacter::SwapButtonTriggered(const FInputActionValue& Value)
+{
+	if (bDisableGameplay) return;
+	
+	if (Value.Get<float>() != 0.f && CombatComponent && CombatComponent->CanSwapWeapons())
+	ServerSwapWeaponTriggered();
 }
 
 void ABlasterCharacter::AimStarted()
@@ -776,6 +785,14 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 	if (LastWeapon)
 	{
 		LastWeapon->ShowPickupWidget(false);
+	}
+}
+
+void ABlasterCharacter::ServerSwapWeaponTriggered_Implementation()
+{
+	if (CombatComponent)
+	{
+		CombatComponent->SwapWeapons();
 	}
 }
 
