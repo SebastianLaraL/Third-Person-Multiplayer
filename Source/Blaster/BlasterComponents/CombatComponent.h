@@ -54,7 +54,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ThrowGrenadeFinished();
 	
-	// Hides the grenade mesh and TODO: spawn actual grenade object.
+	// Hides the grenade mesh and spawn actual grenade object.
 	UFUNCTION(BlueprintCallable)
 	void LaunchGrenade();
 	
