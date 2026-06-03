@@ -155,6 +155,7 @@ void UCombatComponent::OnRep_EquippedWeapon()
 		{
 			Controller->SetHUDEquippedWeaponName(EquippedWeapon->GetWeaponType());
 			Controller->SetHUDWeaponAmmo(EquippedWeapon->GetAmmo());
+			UpdateCarriedAmmo();
 		}
 	}
 }
@@ -256,7 +257,8 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 {
 	if (!EquippedWeapon) return;
 	// Allow characters with a shotgun to fire when they are reloading.
-	if (Character && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun)
+	if (Character && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() ==
+		EWeaponType::EWT_Shotgun)
 	{
 		Character->PlayFireMontage(bIsAiming);
 		EquippedWeapon->Fire(TraceHitTarget);
@@ -405,7 +407,7 @@ void UCombatComponent::InterpFOV(const float DeltaTime)
 	 * you must set the Camera's Depth of Field: Focal Distance and the Aperture (F-stop) 
 	 * attributes to large values.
 	 */
-	
+
 	/*
 		 * 32 and 10000 are the limit values the inspector allows for these settings.
 		 * Hardcoded. Change as you think it is more convenient.
@@ -431,13 +433,13 @@ void UCombatComponent::InterpFOV(const float DeltaTime)
 	else
 	{
 		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, ZoomInterpSpeed);
-		
+
 		Character->GetCamera()->PostProcessSettings.bOverride_DepthOfFieldFstop = false;
 		// Character->GetCamera()->PostProcessSettings.DepthOfFieldFstop = 4.f; // Reset to default values
 		Character->GetCamera()->PostProcessSettings.bOverride_DepthOfFieldFocalDistance = false;
 		// Character->GetCamera()->PostProcessSettings.DepthOfFieldFocalDistance = 0.f; // Reset to default values
 	}
-	
+
 	Character->GetCamera()->SetFieldOfView(CurrentFOV);
 }
 
@@ -445,7 +447,7 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if (!Character || !WeaponToEquip) return;
 	if (CombatState != ECombatState::ECS_Unoccupied) return;
-	
+
 	if (EquippedWeapon && !SecondaryWeapon)
 	{
 		EquipSecondaryWeapon(WeaponToEquip);
@@ -454,7 +456,7 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 	{
 		EquipPrimaryWeapon(WeaponToEquip);
 	}
-		
+
 	// Stop orienting rotation to movement. This is to allow leaning animations in animation blueprint.
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
@@ -465,14 +467,14 @@ void UCombatComponent::SwapWeapons()
 	AWeapon* const TempWeapon = EquippedWeapon;
 	EquippedWeapon = SecondaryWeapon;
 	SecondaryWeapon = TempWeapon;
-	
+
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 	AttachActorToRightHand(EquippedWeapon);
-	
+
 	EquippedWeapon->SetHUDAmmo();
 	UpdateCarriedAmmo();
 	PlayEquipWeaponSound(EquippedWeapon);
-	
+
 	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
 	AttachActorToBack(SecondaryWeapon);
 }
@@ -480,25 +482,29 @@ void UCombatComponent::SwapWeapons()
 void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
 {
 	if (!WeaponToEquip) return;
-	
-	DropEquippedWeapon(); // In this game picking up a weapon drops the previous primary weapon and replaces it with the new one.
+
+	DropEquippedWeapon();
+	// In this game picking up a weapon drops the previous primary weapon and replaces it with the new one.
 	EquippedWeapon = WeaponToEquip;
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-	
+
 	AttachActorToRightHand(EquippedWeapon);
 	EquippedWeapon->SetOwner(Character);
 	EquippedWeapon->SetHUDAmmo();
 
+	if (Controller)
+		Controller->SetHUDWeaponAmmo(EquippedWeapon->GetAmmo());
+
 	UpdateCarriedAmmo();
 	PlayEquipWeaponSound(EquippedWeapon);
-	
+
 	ReloadEmptyWeapon();
 }
 
 void UCombatComponent::EquipSecondaryWeapon(AWeapon* WeaponToEquip)
 {
 	if (!WeaponToEquip) return;
-	
+
 	SecondaryWeapon = WeaponToEquip;
 	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
 	SecondaryWeapon->SetOwner(Character);
@@ -517,7 +523,7 @@ void UCombatComponent::DropEquippedWeapon()
 void UCombatComponent::AttachActorToRightHand(const AActor* ActorToAttach) const
 {
 	if (!Character || !Character->GetMesh() || !ActorToAttach) return;
-	
+
 	if (const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(HandSocketName))
 	{
 		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
@@ -528,11 +534,12 @@ void UCombatComponent::AttachActorToRightHand(const AActor* ActorToAttach) const
 void UCombatComponent::AttachActorToLeftHand(const AActor* ActorToAttach) const
 {
 	if (!Character || !Character->GetMesh() || !ActorToAttach || !EquippedWeapon) return;
-	const bool bUsePistolSocket = 
-		EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Pistol || EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SubmachineGun;
-	
+	const bool bUsePistolSocket =
+		EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Pistol || EquippedWeapon->GetWeaponType() ==
+		EWeaponType::EWT_SubmachineGun;
+
 	const FName SocketName = bUsePistolSocket ? FName("PistolLeftHandSocket") : FName("LeftHandSocket");
-	
+
 	if (const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(SocketName))
 	{
 		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
@@ -602,7 +609,8 @@ bool UCombatComponent::CanFire() const
 	* Weapon is not empty, can fire, is reloading, and it is a shotgun.
 	*/
 	if (!EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->
-		GetWeaponType() == EWeaponType::EWT_Shotgun) return true;
+		GetWeaponType() == EWeaponType::EWT_Shotgun)
+		return true;
 	return !EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Unoccupied;
 }
 
@@ -686,7 +694,7 @@ void UCombatComponent::UpdateAmmoValues()
 void UCombatComponent::UpdateShotgunAmmoValues()
 {
 	if (!Character || !EquippedWeapon) return;
-	
+
 	if (CarriedAmmoMap.Contains(EquippedWeapon->GetWeaponType()))
 	{
 		CarriedAmmoMap[EquippedWeapon->GetWeaponType()] -= 1;
@@ -725,10 +733,10 @@ void UCombatComponent::UpdateHUDGrenades()
 void UCombatComponent::SpawnDefaultWeapon()
 {
 	if (!GetOwner()->HasAuthority()) return;
-	
+
 	const auto World = GetWorld();
 	if (!World) return;
-	
+
 	if (DefaultWeaponClass)
 	{
 		const auto StartingWeapon = World->SpawnActor<AWeapon>(DefaultWeaponClass);
@@ -761,7 +769,7 @@ void UCombatComponent::LaunchGrenade()
 	if (Character && Character->IsLocallyControlled())
 	{
 		ServerLaunchGrenade(HitTarget);
-		
+
 		UpdateHUDGrenades();
 	}
 }
@@ -797,7 +805,8 @@ void UCombatComponent::OnRep_CarriedAmmo()
 	{
 		Controller->SetHUDWeaponCarriedAmmo(CarriedAmmo);
 	}
-	const bool bJumpToShotgunEnd = CombatState == ECombatState::ECS_Reloading && EquippedWeapon != nullptr && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun && CarriedAmmo == 0;
+	const bool bJumpToShotgunEnd = CombatState == ECombatState::ECS_Reloading && EquippedWeapon != nullptr &&
+		EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun && CarriedAmmo == 0;
 	if (bJumpToShotgunEnd)
 	{
 		JumpToShotgunEnd();
@@ -819,7 +828,7 @@ void UCombatComponent::ThrowGrenade()
 {
 	if (Grenades == 0) return;
 	if (CombatState != ECombatState::ECS_Unoccupied || !EquippedWeapon) return;
-	
+
 	CombatState = ECombatState::ECS_ThrowingGrenade;
 	if (Character)
 	{
@@ -831,7 +840,7 @@ void UCombatComponent::ThrowGrenade()
 		}
 		else
 		{
-			Grenades = FMath::Clamp(Grenades - 1 , 0, MaxGrenades);
+			Grenades = FMath::Clamp(Grenades - 1, 0, MaxGrenades);
 		}
 	}
 }
@@ -842,18 +851,19 @@ void UCombatComponent::ServerLaunchGrenade_Implementation(const FVector_NetQuant
 	if (Character && Character->GetGrenadeMesh() && GrenadeClass)
 	{
 		const FVector StartingLocation = Character->GetGrenadeMesh()->GetComponentLocation();
-		const FVector ToTarget = Target -  StartingLocation;
+		const FVector ToTarget = Target - StartingLocation;
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Instigator = Character;
 		SpawnParams.Owner = Character;
 		if (const auto World = GetWorld())
 		{
-			const auto Grenade = World->SpawnActor<AProjectile>(GrenadeClass, StartingLocation, ToTarget.Rotation(), SpawnParams);
+			const auto Grenade = World->SpawnActor<AProjectile>(GrenadeClass, StartingLocation, ToTarget.Rotation(),
+			                                                    SpawnParams);
 			if (const auto GrenadeCollider = Grenade->GetComponentByClass<UBoxComponent>())
 			{
-				GrenadeCollider->IgnoreActorWhenMoving(Character, true); // This is already set in AProjectile::BeginPlay but for some reason it was not working for BP_ThrowGrenade.
+				GrenadeCollider->IgnoreActorWhenMoving(Character, true);
+				// This is already set in AProjectile::BeginPlay but for some reason it was not working for BP_ThrowGrenade.
 			}
-			
 		}
 	}
 }
