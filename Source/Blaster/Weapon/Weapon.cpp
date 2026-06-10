@@ -113,7 +113,8 @@ void AWeapon::OnRep_Owner()
 {
 	Super::OnRep_Owner();
 	// Every time this weapon is picked up by a player we update the hud.
-	if (Owner)
+	// Update the hud when this weapon is picked up by a player, and it is not picked up as a secondary weapon. There was an issue in which clients picked up a secondary weapon, causing the HUD ammo to display the ammo of the secondary weapon instead of equipped weapon's ammo.
+	if (Owner && WeaponState != EWeaponState::EWS_EquippedSecondary)
 	{
 		SetHUDAmmo();
 	}
