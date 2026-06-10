@@ -298,5 +298,5 @@ private:
 	void SpawnDefaultWeapon();
 	
 public:
-	FORCEINLINE bool CanSwapWeapons() const { return EquippedWeapon && SecondaryWeapon; }
+	FORCEINLINE bool CanSwapWeapons() const { return EquippedWeapon && SecondaryWeapon && CombatState == ECombatState::ECS_Unoccupied; } // Has two weapons and is not reloading (or other combat state).
 };
