@@ -216,11 +216,32 @@ void UCombatComponent::Fire()
 
 	bCanFire = false;
 	ServerFire(HitTarget);
+	LocalFire(HitTarget);
 	if (EquippedWeapon)
 	{
 		CrosshairShootingFactor += CrosshairsShootingFactorIncrement;
 	}
 	StartFireTimer();
+}
+
+void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
+{
+	if (!EquippedWeapon) return;
+	// Allow characters with a shotgun to fire when they are reloading.
+	if (Character && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() ==
+		EWeaponType::EWT_Shotgun)
+	{
+		Character->PlayFireMontage(bIsAiming);
+		EquippedWeapon->Fire(TraceHitTarget);
+		CombatState = ECombatState::ECS_Unoccupied;
+		return;
+	}
+	// Fire only when we are not reloading.
+	if (Character && CombatState == ECombatState::ECS_Unoccupied)
+	{
+		Character->PlayFireMontage(bIsAiming);
+		EquippedWeapon->Fire(TraceHitTarget);
+	}
 }
 
 void UCombatComponent::StartFireTimer()
@@ -255,22 +276,8 @@ void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& Trac
 
 void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
-	if (!EquippedWeapon) return;
-	// Allow characters with a shotgun to fire when they are reloading.
-	if (Character && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() ==
-		EWeaponType::EWT_Shotgun)
-	{
-		Character->PlayFireMontage(bIsAiming);
-		EquippedWeapon->Fire(TraceHitTarget);
-		CombatState = ECombatState::ECS_Unoccupied;
-		return;
-	}
-	// Fire only when we are not reloading.
-	if (Character && CombatState == ECombatState::ECS_Unoccupied)
-	{
-		Character->PlayFireMontage(bIsAiming);
-		EquippedWeapon->Fire(TraceHitTarget);
-	}
+	if (Character && Character->IsLocallyControlled() && !Character->HasAuthority()) return;
+	LocalFire(TraceHitTarget);
 }
 
 void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
@@ -464,6 +471,7 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 
 void UCombatComponent::SwapWeapons()
 {
+	if (!CanSwapWeapons()) return;
 	AWeapon* const TempWeapon = EquippedWeapon;
 	EquippedWeapon = SecondaryWeapon;
 	SecondaryWeapon = TempWeapon;

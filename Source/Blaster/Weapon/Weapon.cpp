@@ -182,7 +182,10 @@ void AWeapon::Fire(const FVector& HitTarget)
 				SocketTransform.GetRotation().Rotator());
 		}
 	}
-	SpendRound();
+	if (HasAuthority())
+	{
+		SpendRound();
+	}
 }
 
 void AWeapon::Drop()
