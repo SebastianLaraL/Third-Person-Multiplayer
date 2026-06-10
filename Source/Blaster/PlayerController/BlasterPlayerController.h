@@ -104,6 +104,8 @@ protected:
 	/* Different options to display: No winner, You are the winner, Sole winner, Top winners of the match. */
 	virtual void DisplayWinner() const;
 	
+	void CheckPing(const float DeltaTime);
+	
 private:
 	// UPROPERTY()
 	TObjectPtr<ABlasterHUD> BlasterHUD;
@@ -119,6 +121,22 @@ private:
 	bool bPauseMenuOpen = false;
 	FString StoredMenuPath;
 	
+	// Ping.
+	
+	void CheckPing();
+	void HighPingWarning();
+	void StopHighPingWarning();
+	
+	FTimerHandle CheckPingTimer;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Ping, meta = (ClampMin = 0.1f, ForceUnits = Seconds))
+	float CheckPingFrequency = 20.f;
+	
+	// In milliseconds.
+	UPROPERTY(EditDefaultsOnly, Category = Ping, meta = (ClampMin = 0.1f, ForceUnits = Milliseconds))
+	float HighPingThreshold = 50.f;
+	
+		
 	/** Match state. */
 	
 	UPROPERTY(ReplicatedUsing = OnRep_MatchState)

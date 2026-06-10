@@ -16,6 +16,7 @@
 #include "Blaster/HUD/PauseMenu.h"
 #include "Blaster/HUD/SniperScope.h"
 #include "Blaster/PlayerState/BlasterPlayerState.h"
+#include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "GameFramework/GameMode.h"
@@ -36,6 +37,9 @@ void ABlasterPlayerController::BeginPlay()
 	// Update time HUD and check time sync. 
 	GetWorldTimerManager().SetTimer(CountdownTimer, this, &ThisClass::SetHUDTime, TimeSyncFrequency, true);
 	// TODO: stop timer when game ends.
+	
+	// Start checking ping after 1 second.
+	GetWorldTimerManager().SetTimer(CheckPingTimer, this, &ThisClass::CheckPing, CheckPingFrequency, true, 1);
 }
 
 void ABlasterPlayerController::SetupInputComponent()
@@ -623,6 +627,60 @@ void ABlasterPlayerController::TogglePauseMenu()
 	else
 	{
 		RemovePauseMenu(); // This was made a function to be bound from the BlasterHUD class when pressing the ClosePauseMenu button.
+	}
+}
+
+void ABlasterPlayerController::HighPingWarning()
+{
+	if (!ValidateBlasterHUD()) return;
+
+	const bool bValid = BlasterHUD->CharacterOverlay && BlasterHUD->CharacterOverlay->HighPingImage && BlasterHUD->
+		CharacterOverlay->HighPingAnimation;
+	if (bValid)
+	{
+		const int32 Loops = CheckPingFrequency;
+		
+		BlasterHUD->CharacterOverlay->HighPingImage->SetRenderOpacity(1.0f);
+		BlasterHUD->CharacterOverlay->PlayAnimation(BlasterHUD->CharacterOverlay->HighPingAnimation, 0.f, Loops);
+	}
+}
+
+void ABlasterPlayerController::StopHighPingWarning()
+{
+	if (!ValidateBlasterHUD()) return;
+
+	const bool bValid = BlasterHUD->CharacterOverlay && BlasterHUD->CharacterOverlay->HighPingImage && BlasterHUD->
+		CharacterOverlay->HighPingAnimation;
+	if (bValid)
+	{
+		BlasterHUD->CharacterOverlay->HighPingImage->SetRenderOpacity(0.0f);
+		if (BlasterHUD->CharacterOverlay->IsAnimationPlaying(BlasterHUD->CharacterOverlay->HighPingAnimation))
+		{
+			BlasterHUD->CharacterOverlay->StopAnimation(BlasterHUD->CharacterOverlay->HighPingAnimation);
+		}
+	}
+}
+
+void ABlasterPlayerController::CheckPing()
+{
+	if (PlayerState = PlayerState ? PlayerState.Get() : nullptr; PlayerState)
+	{
+		// Bad ping. Start warning animation.
+		if (PlayerState->GetPingInMilliseconds() > HighPingThreshold)
+		{
+			HighPingWarning();
+		}
+	}
+	// Good ping. Check warning animation and stop it.
+	else if (PlayerState && ValidateBlasterHUD())
+	{
+		const bool bHighPingAnimationPlaying = BlasterHUD->CharacterOverlay &&
+			BlasterHUD->CharacterOverlay->HighPingAnimation &&
+			BlasterHUD->CharacterOverlay->IsAnimationPlaying(BlasterHUD->CharacterOverlay->HighPingAnimation);
+		if (bHighPingAnimationPlaying)
+		{
+			StopHighPingWarning();
+		}
 	}
 }
 

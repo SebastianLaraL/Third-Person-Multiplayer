@@ -9,6 +9,7 @@
 class UProgressBar;
 class UTextBlock;
 class UWidgetAnimation;
+class UImage;
 
 /**
  * For displaying players information such as health, ammo, and defeats.
@@ -54,4 +55,10 @@ public:
 	// E.g. blinking animation.
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	TObjectPtr<UWidgetAnimation> CountdownAnimation;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> HighPingImage;
+	
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> HighPingAnimation;
 };
