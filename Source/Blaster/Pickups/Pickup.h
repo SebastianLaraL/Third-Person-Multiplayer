@@ -33,6 +33,9 @@ protected:
 	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TObjectPtr<USceneComponent> NewRoot;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<USphereComponent> SphereComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

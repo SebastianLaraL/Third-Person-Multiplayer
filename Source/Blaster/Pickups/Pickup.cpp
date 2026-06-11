@@ -15,7 +15,8 @@ APickup::APickup()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
-	SetRootComponent(CreateDefaultSubobject<USceneComponent>(TEXT("Pickup root")));
+	NewRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Pickup root"));
+	SetRootComponent(NewRoot);
 	RootComponent->SetMobility(EComponentMobility::Type::Movable);
 	
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere Comp"));
