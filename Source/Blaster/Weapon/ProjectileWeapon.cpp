@@ -6,6 +6,11 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Projectile.h"
 
+AProjectileWeapon::AProjectileWeapon()
+{
+	FireType = EFireType::EFT_Projectile;
+}
+
 void AProjectileWeapon::Fire(const FVector& HitTarget)
 {
 	Super::Fire(HitTarget);

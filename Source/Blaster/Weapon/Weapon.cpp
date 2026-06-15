@@ -13,6 +13,7 @@
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Particles/ParticleSystem.h"
 #include "Sound/SoundCue.h"
 
@@ -200,6 +201,33 @@ void AWeapon::AddAmmo(const int32 AmmoToAdd)
 {
 	Ammo = FMath::Clamp(Ammo + AmmoToAdd,0, MagCapacity);
 	SetHUDAmmo();
+}
+
+FVector AWeapon::TraceEndWithScatter(const FVector& HitTarget) const
+{
+	const USkeletalMeshSocket* MuzzleFlashSocket = GetMesh()->GetSocketByName("MuzzleFlash");
+	if (!MuzzleFlashSocket || !bUseScatter) return FVector();
+
+	const  FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetMesh());
+	const  FVector TraceStart = SocketTransform.GetLocation();
+
+	const  FVector ToTargetNormalized = (HitTarget - TraceStart).GetSafeNormal();
+	const  FVector SphereCenter = TraceStart + ToTargetNormalized * DistanceToSphere;
+	const  FVector RandVec = UKismetMathLibrary::RandomUnitVector() * FMath::FRandRange(0.f, SphereRadius);
+	const  FVector EndLoc = SphereCenter + RandVec;
+	const  FVector ToEndLoc = EndLoc - TraceStart;
+
+	
+	DrawDebugSphere(GetWorld(), SphereCenter, SphereRadius, 12, FColor::Red, true);
+	DrawDebugSphere(GetWorld(), EndLoc, 4.f, 12, FColor::Orange, true);
+	DrawDebugLine(
+		GetWorld(),
+		TraceStart,
+		FVector(TraceStart + ToEndLoc * MaxTraceDistance / ToEndLoc.Size()),
+		FColor::Cyan,
+		true);
+
+	return FVector(TraceStart + ToEndLoc * MaxTraceDistance / ToEndLoc.Size());
 }
 
 void AWeapon::SetWeaponState(EWeaponState NewState)

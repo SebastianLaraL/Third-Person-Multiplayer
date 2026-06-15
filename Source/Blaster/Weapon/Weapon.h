@@ -28,6 +28,16 @@ enum class EWeaponState : uint8
 	EWS_MAX						UMETA(DisplayName = "DefaultMax")
 };
 
+UENUM(BlueprintType)
+enum class EFireType : uint8
+{
+	EFT_HitScan			UMETA(DisplayName = "Hit Scan Weapon"),
+	EFT_Projectile		UMETA(DisplayName = "Projectile Weapon"),
+	EFT_Shotgun			UMETA(DisplayName = "Shotgun Weapon (Hit Scan)"),
+
+	EFT_MAX				UMETA(DisplayName = "DefaultMAX")
+};
+
 /*
  * Base Weapon class.
  * Custom depth is enabled by default.
@@ -57,6 +67,8 @@ public:
 	void SetWeaponState(EWeaponState NewState);
 	
 	void AddAmmo(const int32 AmmoToAdd);
+	
+	FVector TraceEndWithScatter(const FVector& HitTarget) const;
 	
 	/*
 	* Textures for the weapon crosshairs.
@@ -107,6 +119,16 @@ public:
 	
 	// Set to true when spawning if this is the default spawn weapon.
 	bool bDestroyWeapon = false;
+	
+	UPROPERTY(EditAnywhere)
+	EFireType FireType;
+
+	// Bullets scatter like a shotgun.
+	UPROPERTY(EditAnywhere, Category = "Weapon Scatter")
+	bool bUseScatter = false;
+	
+	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f))
+	float MaxTraceDistance = 100.f; 
 	
 protected:
 	virtual void BeginPlay() override;
@@ -183,6 +205,16 @@ private:
 	
 	UPROPERTY(EditAnywhere)
 	EWeaponType WeaponType;
+	
+	/**
+	* Trace end with scatter
+	*/
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Scatter", meta = (ClampMin = 0.000001f))
+	float DistanceToSphere = 800.f;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Scatter", meta = (ClampMin = 0.000001f))
+	float SphereRadius = 75.f;
 	
 	UFUNCTION()
 	void OnRep_Ammo();

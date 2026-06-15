@@ -19,12 +19,9 @@ class BLASTER_API AHitScanWeapon : public AWeapon
 	GENERATED_BODY()
 
 public:
+	AHitScanWeapon();
 	virtual void Fire(const FVector& HitTarget) override;
 protected:
-	/*
-	 Calculates a vector with random scatter.
-	 */
-	FVector TraceEndWithScatter(const FVector& TraceStart, const FVector& HitTarget) const;
 	// Performs a line trace depending on whether this weapon uses scatter or not and spawns a beam effect.
 	// Outs the result of the line trace.
 	void WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit) const;
@@ -32,25 +29,7 @@ private:
 	
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f))
 	float Damage = 10.f;
-	
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f))
-	float MaxTraceDistance = 100.f; 
-	
-	/*
-	 * Trace end with scatter.
-	 */
-	
-	
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f), Category = "Weapon Scatter")
-	float DistanceToSphere = 800.f;
-	
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f),Category = "Weapon Scatter")
-	float SphereRadius = 75.f;
-	
-	// Check this if you want bullets scatter like a shotgun.
-	UPROPERTY(EditAnywhere, Category = "WeaponScatter")
-	bool bUseScatter = false;
-	
+		
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1), Category = "Weapon Scatter")
 	uint32 NumberOfPellets = 1;
 	
