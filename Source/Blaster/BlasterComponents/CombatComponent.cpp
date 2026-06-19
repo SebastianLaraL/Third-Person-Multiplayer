@@ -125,6 +125,10 @@ void UCombatComponent::SetAiming(bool NewAiming)
 			UGameplayStatics::PlaySound2D(this, ZoomOutSniperRifle);
 		}
 	}
+	if (Character->IsLocallyControlled())
+	{
+		bAimButtonPressed = bIsAiming;
+	}
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool NewAiming)
@@ -634,6 +638,14 @@ void UCombatComponent::ShowAttachedGrenade(const bool bShowGrenade) const
 	if (Character && Character->GetGrenadeMesh())
 	{
 		Character->GetGrenadeMesh()->SetVisibility(bShowGrenade);
+	}
+}
+
+void UCombatComponent::OnRep_Aiming()
+{
+	if (Character && Character->IsLocallyControlled())
+	{
+		bIsAiming = bAimButtonPressed;
 	}
 }
 

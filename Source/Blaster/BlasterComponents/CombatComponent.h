@@ -148,8 +148,13 @@ private:
 		meta = (AllowPrivateAccess = true))
 	TObjectPtr<AWeapon> SecondaryWeapon;
 
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = true))
-	bool bIsAiming;
+	UPROPERTY(ReplicatedUsing = OnRep_Aiming, VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = true))
+	bool bIsAiming = false;
+	
+	bool bAimButtonPressed = false;
+	
+	UFUNCTION()
+	void OnRep_Aiming();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = true))
 	float BaseWalkSpeed;
