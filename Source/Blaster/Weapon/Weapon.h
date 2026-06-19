@@ -191,11 +191,20 @@ private:
 	
 	
 	// Current ammo amount.
-	UPROPERTY(ReplicatedUsing = OnRep_Ammo, EditAnywhere, Category = Ammo)
+	UPROPERTY(EditAnywhere, Category = Ammo)
 	int32 Ammo = 1;
 	
 	UPROPERTY(EditAnywhere, Category = Ammo, meta = (ClampMin = 1))
 	int32 MagCapacity;
+	
+	// The number of unprocessed server request for Ammo.
+	int32 Sequence = 0;
+	
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateAmmo(const int32 ServerAmmo);
+	
+	UFUNCTION(Client, Reliable)
+	void ClientAddAmmo(const int32 AmmoToAdd);
 	
 	// UPROPERTY()
 	TObjectPtr<ABlasterCharacter> BlasterOwnerCharacter;
@@ -215,9 +224,6 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Scatter", meta = (ClampMin = 0.000001f))
 	float SphereRadius = 75.f;
-	
-	UFUNCTION()
-	void OnRep_Ammo();
 	
 	void SpendRound();
 	
