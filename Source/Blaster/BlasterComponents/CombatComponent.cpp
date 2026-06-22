@@ -652,13 +652,21 @@ void UCombatComponent::OnRep_Aiming()
 bool UCombatComponent::CanFire() const
 {
 	if (!EquippedWeapon) return false;
-	if (bLocallyReloading) return false;
-	/*
+	if (bLocallyReloading)
+	{
+		// Allow shotgun shot while reloading.
+
+		/*
 	* Weapon is not empty, can fire, is reloading, and it is a shotgun.
 	*/
-	if (!EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->
-		GetWeaponType() == EWeaponType::EWT_Shotgun)
-		return true;
+		if (!EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Reloading &&
+			EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun)
+		{
+			bLocallyReloading = false;
+			return true;
+		}
+		return false;
+	}
 	return !EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Unoccupied;
 }
 

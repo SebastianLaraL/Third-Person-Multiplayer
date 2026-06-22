@@ -156,7 +156,7 @@ private:
 	UFUNCTION()
 	void OnRep_Aiming();
 	
-	bool bLocallyReloading = false;
+	mutable bool bLocallyReloading = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = true))
 	float BaseWalkSpeed;
