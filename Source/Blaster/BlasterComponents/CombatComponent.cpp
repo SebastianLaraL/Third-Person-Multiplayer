@@ -652,6 +652,7 @@ void UCombatComponent::OnRep_Aiming()
 bool UCombatComponent::CanFire() const
 {
 	if (!EquippedWeapon) return false;
+	if (bLocallyReloading) return false;
 	/*
 	* Weapon is not empty, can fire, is reloading, and it is a shotgun.
 	*/
@@ -664,9 +665,12 @@ bool UCombatComponent::CanFire() const
 void UCombatComponent::Reload()
 {
 	// We can reload only if we have enough ammo, we have fired at least one projectile of the current magazine, and we are unoccupied.
-	if (CarriedAmmo > 0 && EquippedWeapon && !EquippedWeapon->IsFull() && CombatState == ECombatState::ECS_Unoccupied)
+	if (CarriedAmmo > 0 && EquippedWeapon && !EquippedWeapon->IsFull() && CombatState == ECombatState::ECS_Unoccupied
+		&& !bLocallyReloading)
 	{
 		ServerReload();
+		HandleReload();
+		bLocallyReloading = true;
 	}
 }
 
@@ -674,11 +678,15 @@ void UCombatComponent::ServerReload_Implementation()
 {
 	if (!Character) return;
 	CombatState = ECombatState::ECS_Reloading;
-	HandleReload(); // Handle Reload for server.
+	if (!Character->IsLocallyControlled())
+	{
+		HandleReload(); // Handle Reload for server.
+	}
 }
 
 void UCombatComponent::FinishReloading()
 {
+	bLocallyReloading = false; // No need to check if character is locally controlled to set this, we'll always make sure this is set to false here.
 	if (Character && Character->HasAuthority())
 	{
 		CombatState = ECombatState::ECS_Unoccupied;
@@ -695,8 +703,12 @@ void UCombatComponent::OnRep_CombatState()
 {
 	switch (CombatState)
 	{
-	case ECombatState::ECS_Reloading: HandleReload();
-		break; // Handle Reload for clients.
+	case ECombatState::ECS_Reloading:
+		if (Character && !Character->IsLocallyControlled())
+		{
+			HandleReload();
+		}
+		break;
 
 	// Allow to fire immediately when not reloading (or in any busy state) and we are pressing the fire button.
 	case ECombatState::ECS_Unoccupied:
@@ -718,7 +730,8 @@ void UCombatComponent::OnRep_CombatState()
 
 void UCombatComponent::HandleReload() const
 {
-	Character->PlayReloadMontage();
+	if (Character)
+		Character->PlayReloadMontage();
 }
 
 void UCombatComponent::UpdateAmmoValues()
