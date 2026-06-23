@@ -11,6 +11,7 @@
 #include "BlasterCharacter.generated.h"
 
 
+class ULagCompensationComponent;
 class UCapsuleComponent;
 class UBuffComponent;
 class UNiagaraComponent;
@@ -137,6 +138,8 @@ private:
 	// My fist rep notify!
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* LastWeapon);
+	
+	// Blaster components.
 
 	/* Combat component. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = true))
@@ -149,6 +152,10 @@ private:
 	// Buff Component.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Buffs", meta = (AllowPrivateAccess = true))
 	TObjectPtr<UBuffComponent> BuffComponent;
+	
+	// Lag compensation component.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LagCompensation", meta = (AllowPrivateAccess = true))
+	TObjectPtr<ULagCompensationComponent> LagCompensationComponent;
 
 	// My first Server RPC!
 	UFUNCTION(Server, Reliable)

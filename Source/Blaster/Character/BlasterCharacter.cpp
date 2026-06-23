@@ -22,6 +22,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Blaster/BlasterComponents/BuffComponent.h"
+#include "Blaster/BlasterComponents/LagCompensationComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 
@@ -71,6 +72,9 @@ ABlasterCharacter::ABlasterCharacter()
 	// Buff component.
 	BuffComponent = CreateDefaultSubobject<UBuffComponent>(TEXT("BuffComponent"));
 	BuffComponent->SetIsReplicated(true);
+	
+	// Lag compensation component.
+	LagCompensationComponent = CreateDefaultSubobject<ULagCompensationComponent>(TEXT("LagCompensation Component"));
 
 	// Always spawn. This is because there was an issue when a character should spawn but did not appear maybe because overlapping with something.
 	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
