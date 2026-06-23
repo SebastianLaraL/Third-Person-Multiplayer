@@ -11,6 +11,7 @@
 #include "BlasterCharacter.generated.h"
 
 
+class UCapsuleComponent;
 class UBuffComponent;
 class UNiagaraComponent;
 class UNiagaraSystem;
@@ -42,6 +43,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+	virtual void Jump() override;
 	void PlayFireMontage(bool bAiming);
 	void PlayReloadMontage() const;
 	
@@ -67,7 +69,20 @@ public:
 	void PlayThrowGrenadeMontage() const;
 	
 protected:
+	// Hit boxes for server-side rewind.
+	UPROPERTY(EditDefaultsOnly, Category = "Hit Boxes")
+	TArray<FName> HitBoxBoneNames = {
+		"Head",
+		"Neck",
+		"LeftArm", "LeftForeArm", "RightArm", "RightForeArm",
+		"Hips", "Spine" /*Lower spine*/, "Spine1" /* Upper spine*/, 
+		"LeftLeg"/*Lower part*/, "LeftUpLeg" , "LeftFoot", "RightLeg"/* Lower part*/, "RightUpLeg", "RightFoot"
+		// You can add more bone names, I am using only these since I am not getting paid for developing this game.
+	};
 
+	UPROPERTY(VisibleAnywhere, Category = "Hit Boxes", meta = (AllowPrivateAccess = true))
+	TArray<TObjectPtr<UCapsuleComponent>> HitCollisionCapsules;
+	
 	// Gameplay basic movement.
 	void Move(const FInputActionValue& Value);
 	void Turn(const FInputActionValue& Value);
@@ -100,7 +115,6 @@ protected:
 	void CalculateAO_Pitch();
 	// Turn for Simulated Proxies only.
 	void SimProxiesTurn();
-	virtual void Jump() override;
 	
 	void PlayHitReactMontage() const;
 

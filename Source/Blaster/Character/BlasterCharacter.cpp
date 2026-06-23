@@ -82,6 +82,19 @@ ABlasterCharacter::ABlasterCharacter()
 	GrenadeMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GrenadeMesh"));
 	GrenadeMesh->SetupAttachment(GetMesh(), FName("GrenadeSocket"));
 	GrenadeMesh->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	
+	// Hit boxes for server-side rewind.
+	HitCollisionCapsules.Empty();
+	HitCollisionCapsules.Reserve(HitBoxBoneNames.Num());
+	for (const FName& BoneName : HitBoxBoneNames)
+	{
+		if (BoneName.IsNone()) continue;
+		
+		UCapsuleComponent* CapsComp = CreateDefaultSubobject<UCapsuleComponent>(BoneName);
+		CapsComp->SetupAttachment(GetMesh(), BoneName);
+		CapsComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		HitCollisionCapsules.Add(CapsComp);
+	}
 }
 
 void ABlasterCharacter::Tick(float DeltaTime)
