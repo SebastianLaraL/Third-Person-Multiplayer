@@ -45,7 +45,6 @@ class BLASTER_API ULagCompensationComponent : public UActorComponent
 
 public:
 	ULagCompensationComponent();
-	friend class ABlasterCharacter;
 	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
