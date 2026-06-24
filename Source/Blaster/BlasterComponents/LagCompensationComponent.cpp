@@ -95,7 +95,5 @@ void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, c
 			FQuat(CapsuleInfo.Value.Rotation),
 			Color, false, 1, 0, 0 
 		);
-		UE_LOG(LogTemp, Display, TEXT("DRAWING CAPSULES... %s"), *CapsuleInfo.Key.ToString());
-		UE_LOG(LogTemp, Display, TEXT("CAPSULE Location: %f, %f, %f"), CapsuleInfo.Value.Location.X, CapsuleInfo.Value.Location.Y, CapsuleInfo.Value.Location.Z);
 	}
 }
