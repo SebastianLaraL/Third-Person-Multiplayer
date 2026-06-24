@@ -69,7 +69,7 @@ public:
 	void PlayElimMontage() const;
 	void PlayThrowGrenadeMontage() const;
 	
-	// Hit boxes for server-side rewind.
+	// Hit boxes for server-side rewind. DO NOT REMOVE OR RESIZE THIS ARRAY.
 	UPROPERTY(VisibleAnywhere, Category = "Hit Boxes", meta = (AllowPrivateAccess = true))
 	TArray<TObjectPtr<UCapsuleComponent>> HitCollisionCapsules;
 protected:
