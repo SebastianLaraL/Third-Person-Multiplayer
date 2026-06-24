@@ -33,17 +33,13 @@ void ULagCompensationComponent::BeginPlay()
 	{
 		BlasterPlayerController = Cast<ABlasterPlayerController>(BlasterCharacter->GetController());
 	}
-	
-	FFramePackage Package;
-	
-	SaveFramePackage(Package);
-	ShowFramePackage(Package);
 }
 
 void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	//
+	
+	// Save Frame packages history.
 	FFramePackage ThisFramePackage;
 	
 	if (FrameHistory.Num() <= 1)
@@ -53,16 +49,16 @@ void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 	}
 	else
 	{
-		float HistoryLength = FrameHistory.First().Time - FrameHistory.First().Time;
+		float HistoryLength = FrameHistory.First().Time - FrameHistory.Last().Time;
 		while (HistoryLength > MaxRecordTime)
 		{
 			FrameHistory.Pop();
-			HistoryLength = FrameHistory.First().Time - FrameHistory.First().Time;
+			HistoryLength = FrameHistory.First().Time - FrameHistory.Last().Time;
 		}
 		SaveFramePackage(ThisFramePackage);
 		FrameHistory.AddFront(ThisFramePackage);
 
-		ShowFramePackage(ThisFramePackage, FColor::Red);
+		//ShowFramePackage(ThisFramePackage, FColor::Red); Debug only.
 	}
 }
 

@@ -63,7 +63,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<ABlasterPlayerController> BlasterPlayerController;
 	
-	TRingBuffer<FFramePackage> FrameHistory;
+	TRingBuffer<FFramePackage> FrameHistory; // Front is the newest package and back is the oldest.
 	
 	UPROPERTY(EditAnywhere, meta = (ForceUnits = "Seconds", AllowPrivateAccess = true))
 	float MaxRecordTime = 4.f;
