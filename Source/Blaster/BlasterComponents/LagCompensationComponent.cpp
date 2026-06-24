@@ -44,7 +44,26 @@ void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	//
+	FFramePackage ThisFramePackage;
 	
+	if (FrameHistory.Num() <= 1)
+	{
+		SaveFramePackage(ThisFramePackage);
+		FrameHistory.AddFront(ThisFramePackage);
+	}
+	else
+	{
+		float HistoryLength = FrameHistory.First().Time - FrameHistory.First().Time;
+		while (HistoryLength > MaxRecordTime)
+		{
+			FrameHistory.Pop();
+			HistoryLength = FrameHistory.First().Time - FrameHistory.First().Time;
+		}
+		SaveFramePackage(ThisFramePackage);
+		FrameHistory.AddFront(ThisFramePackage);
+
+		ShowFramePackage(ThisFramePackage, FColor::Red);
+	}
 }
 
 void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package)

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Containers/RingBuffer.h"
 #include "LagCompensationComponent.generated.h"
 
 USTRUCT(BlueprintType)
@@ -22,6 +23,9 @@ struct FCapsuleInformation
 	
 	UPROPERTY()
 	FRotator Rotation;
+	
+	// UPROPERTY()
+	// FName BoneName?
 };
 
 USTRUCT(BlueprintType)
@@ -58,4 +62,9 @@ private:
 	
 	UPROPERTY()
 	TObjectPtr<ABlasterPlayerController> BlasterPlayerController;
+	
+	TRingBuffer<FFramePackage> FrameHistory;
+	
+	UPROPERTY(EditAnywhere, meta = (ForceUnits = "Seconds", AllowPrivateAccess = true))
+	float MaxRecordTime = 4.f;
 };
