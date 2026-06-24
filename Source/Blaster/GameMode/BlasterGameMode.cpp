@@ -28,7 +28,7 @@ void ABlasterGameMode::BeginPlay()
 
 void ABlasterGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	UE_LOG(LogGameMode, Warning, TEXT("End-Play-Reason: %d"), EndPlayReason)
+	UE_LOG(LogGameMode, Warning, TEXT("End-Play-Reason: %s"), *UEnum::GetValueAsString(EndPlayReason))
 	GetWorldTimerManager().ClearAllTimersForObject(this);
 	Super::EndPlay(EndPlayReason);
 }
