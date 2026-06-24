@@ -78,8 +78,8 @@ void APickupSpawnPoint::SpawnPickup()
 			const int32 RandomWeaponType = FMath::RandRange(0, static_cast<int32>(EWeaponType::EWT_MAX) - 1); // Exclude EWT_MAX (no valid weapon to spawn).
 			UE_LOG(LogSpawnPoint, Display, TEXT("Generated random ammo: %d"), RandomWeaponType);
 			AmmoPickup->WeaponType = static_cast<EWeaponType>(RandomWeaponType);
-			UE_LOG(LogSpawnPoint, Display, TEXT("Weapon type as uint8: %d .Weapon type generated: %d"),
-			       static_cast<uint8>(RandomWeaponType), AmmoPickup->WeaponType)
+			UE_LOG(LogSpawnPoint, Display, TEXT("Weapon type as uint8: %d .Weapon type generated: %s"),
+			       static_cast<uint8>(RandomWeaponType), *UEnum::GetValueAsString(AmmoPickup->WeaponType))
 			
 			AmmoPickup->FinishSpawning(GetTransform());
 
