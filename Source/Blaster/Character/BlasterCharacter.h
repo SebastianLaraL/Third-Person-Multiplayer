@@ -69,6 +69,9 @@ public:
 	void PlayElimMontage() const;
 	void PlayThrowGrenadeMontage() const;
 	
+	// Hit boxes for server-side rewind.
+	UPROPERTY(VisibleAnywhere, Category = "Hit Boxes", meta = (AllowPrivateAccess = true))
+	TArray<TObjectPtr<UCapsuleComponent>> HitCollisionCapsules;
 protected:
 	// Hit boxes for server-side rewind.
 	UPROPERTY(EditDefaultsOnly, Category = "Hit Boxes")
@@ -80,9 +83,6 @@ protected:
 		"LeftLeg"/*Lower part*/, "LeftUpLeg" , "LeftFoot", "RightLeg"/* Lower part*/, "RightUpLeg", "RightFoot"
 		// You can add more bone names, I am using only these since I am not getting paid for developing this game.
 	};
-
-	UPROPERTY(VisibleAnywhere, Category = "Hit Boxes", meta = (AllowPrivateAccess = true))
-	TArray<TObjectPtr<UCapsuleComponent>> HitCollisionCapsules;
 	
 	// Gameplay basic movement.
 	void Move(const FInputActionValue& Value);

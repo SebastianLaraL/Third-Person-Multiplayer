@@ -36,6 +36,7 @@ struct FFramePackage
 	TMap<FName, FCapsuleInformation> HitCapsuleInfo;
 };
 
+class ABlasterCharacter;
 class ABlasterPlayerController;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -48,6 +49,9 @@ public:
 	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	void ShowFramePackage(const FFramePackage& Package, const FColor& Color = FColor::Orange) const;
+protected:
+	void SaveFramePackage(FFramePackage& Package);
 private:
 	UPROPERTY()
 	TObjectPtr<ABlasterCharacter> BlasterCharacter;
