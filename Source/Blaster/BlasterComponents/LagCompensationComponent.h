@@ -40,6 +40,18 @@ struct FFramePackage
 	TMap<FName, FCapsuleInformation> HitCapsuleInfo;
 };
 
+USTRUCT(BlueprintType)
+struct FServerSideRewindResult
+{
+	GENERATED_BODY()
+	
+	UPROPERTY()
+	bool bHitConfirmed;
+	
+	UPROPERTY()
+	bool bHeadShot;
+};
+
 class ABlasterCharacter;
 class ABlasterPlayerController;
 
@@ -54,10 +66,15 @@ public:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void ShowFramePackage(const FFramePackage& Package, const FColor& Color = FColor::Orange) const;
-	void ServerSideRewind(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, const float HitTime);
+	FServerSideRewindResult ServerSideRewind(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, const float HitTime);
 protected:
 	void SaveFramePackage(FFramePackage& Package);
 	FFramePackage InterpBetweenFrames(const FFramePackage& OlderFrame, const FFramePackage& YoungerFrame, const float HitTime) const;
+	FServerSideRewindResult ConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation);
+	void CacheCapsulePositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage) const;
+	void MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
+	void ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
+	void EnableCharacterMeshCollision(const ABlasterCharacter* HitCharacter, const ECollisionEnabled::Type CollisionEnabled) const;
 private:
 	UPROPERTY()
 	TObjectPtr<ABlasterCharacter> BlasterCharacter;
@@ -69,4 +86,8 @@ private:
 	
 	UPROPERTY(EditAnywhere, meta = (ForceUnits = "Seconds", AllowPrivateAccess = true))
 	float MaxRecordTime = 4.f;
+	
+	// Used for checking headshot line traces.
+	UPROPERTY(EditAnywhere)
+	FName HeadBoneName = FName("Head");
 };

@@ -110,6 +110,125 @@ FFramePackage ULagCompensationComponent::InterpBetweenFrames(const FFramePackage
 	return InterpFramePackage;
 }
 
+FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackage& Package,
+	ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation)
+{
+	if (!HitCharacter) return FServerSideRewindResult{};
+
+	FFramePackage CurrentFrame;
+	CacheCapsulePositions(HitCharacter, CurrentFrame);
+	MoveCapsules(HitCharacter, Package);
+	EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::NoCollision);
+
+	// Enable collision for the head first
+	UCapsuleComponent* HeadCapsule = *HitCharacter->HitCollisionCapsules.FindByKey(HeadBoneName);
+	HeadCapsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	HeadCapsule->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+
+	const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f; // Increase range by 25%.
+	if (const UWorld* World = GetWorld())
+	{
+		FHitResult ConfirmHitResult;
+		
+		World->LineTraceSingleByChannel(
+			ConfirmHitResult,
+			TraceStart,
+			TraceEnd,
+			ECollisionChannel::ECC_Visibility
+		);
+		if (ConfirmHitResult.bBlockingHit) // we hit the head, return early
+		{
+			ResetHitCapsules(HitCharacter, CurrentFrame);
+			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryOnly);
+			return FServerSideRewindResult{ true, true };
+		}
+		
+		// Didn't hit head, check the rest of the boxes
+		
+		for (auto& HitBoxPair : HitCharacter->HitCollisionCapsules)
+		{
+			if (HitBoxPair)
+			{
+				HitBoxPair->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+				HitBoxPair->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+			}
+		}
+		World->LineTraceSingleByChannel(
+			ConfirmHitResult,
+			TraceStart,
+			TraceEnd,
+			ECollisionChannel::ECC_Visibility
+		);
+		if (ConfirmHitResult.bBlockingHit)
+		{
+			ResetHitCapsules(HitCharacter, CurrentFrame);
+			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryOnly);
+			return FServerSideRewindResult{ true, false };
+		}
+	}
+
+	ResetHitCapsules(HitCharacter, CurrentFrame);
+	EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics); // TODO: test with query only.
+	return FServerSideRewindResult{ false, false };
+}
+
+void ULagCompensationComponent::CacheCapsulePositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage) const
+{
+	if (!HitCharacter) return;
+	for (const auto& HitCapsule : HitCharacter->HitCollisionCapsules)
+	{
+		if (HitCapsule)
+		{
+			FCapsuleInformation CapsuleInfo;
+			CapsuleInfo.Location = HitCapsule->GetComponentLocation();
+			CapsuleInfo.Rotation = HitCapsule->GetComponentRotation();
+			CapsuleInfo.Radius = HitCapsule->GetScaledCapsuleRadius();
+			CapsuleInfo.CapsuleHalfHeight = HitCapsule->GetScaledCapsuleHalfHeight();
+			OutFramePackage.HitCapsuleInfo.Add(HitCapsule->GetFName(), CapsuleInfo);
+		}
+	}
+}
+
+void ULagCompensationComponent::MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package)
+{
+	if (!HitCharacter) return;
+	
+	for (auto& HitCapsule : HitCharacter->HitCollisionCapsules)
+	{
+		if (HitCapsule)
+		{
+			HitCapsule->SetWorldLocationAndRotation(Package.HitCapsuleInfo[HitCapsule->GetFName()].Location, Package.HitCapsuleInfo[HitCapsule->GetFName()].Rotation);
+			HitCapsule->SetCapsuleRadius(Package.HitCapsuleInfo[HitCapsule->GetFName()].Radius);
+			HitCapsule->SetCapsuleHalfHeight(Package.HitCapsuleInfo[HitCapsule->GetFName()].CapsuleHalfHeight);
+		}
+	}
+}
+
+void ULagCompensationComponent::ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package)
+{
+	if (!HitCharacter) return;
+	
+	for (auto& HitCapsule : HitCharacter->HitCollisionCapsules)
+	{
+		if (HitCapsule)
+		{
+			HitCapsule->SetWorldLocationAndRotation(Package.HitCapsuleInfo[HitCapsule->GetFName()].Location, Package.HitCapsuleInfo[HitCapsule->GetFName()].Rotation);
+			HitCapsule->SetCapsuleRadius(Package.HitCapsuleInfo[HitCapsule->GetFName()].Radius);
+			HitCapsule->SetCapsuleHalfHeight(Package.HitCapsuleInfo[HitCapsule->GetFName()].CapsuleHalfHeight);
+			HitCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+	}
+}
+
+void ULagCompensationComponent::EnableCharacterMeshCollision(const ABlasterCharacter* HitCharacter,
+	const ECollisionEnabled::Type CollisionEnabled) const
+{
+	if (HitCharacter && HitCharacter->GetMesh())
+	{
+		HitCharacter->GetMesh()->SetCollisionEnabled(CollisionEnabled);
+	}
+}
+
 void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, const FColor& Color) const
 {
 	for (const auto& CapsuleInfo : Package.HitCapsuleInfo)
@@ -125,27 +244,29 @@ void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, c
 	}
 }
 
-void ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart,
+FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart,
 	const FVector_NetQuantize& HitLocation, const float HitTime)
 {
+	constexpr FServerSideRewindResult EmptyResult{};
 	if (!HitCharacter || !HitCharacter->GetLagCompensationComponent())
 	{
-		return;
+		return EmptyResult;
 	}
 	
+	bool bShouldInterpolate = true;
 	const TRingBuffer<FFramePackage>& History = HitCharacter->GetLagCompensationComponent()->FrameHistory;
 	if (History.Num() == 0)
 	{
-		return;
+		return EmptyResult;
 	}
 	
 	const float NewestHistoryTime = History.First().Time;
 	const float OldestHistoryTime = History.Last().Time;
 	
-	// Too old, too much lag to make Server side rewind.
+	// Too old, too laggy to make Server side rewind.
 	if (OldestHistoryTime > HitTime)
 	{
-		return;
+		return EmptyResult;
 	}
 
 	FFramePackage FrameToCheck;
@@ -154,11 +275,13 @@ void ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter
 	if (OldestHistoryTime == HitTime) [[unlikely]]
 	{
 		FrameToCheck = History.Last();
+		// bShouldInterpolate = false;
 	}
 	// Border case: newer than latest frame.
 	else if (NewestHistoryTime <= HitTime)
 	{
 		FrameToCheck = History.First();
+		// bShouldInterpolate = false;
 	}
 	// We need to browse the list and interpolate.
 	else
@@ -175,10 +298,17 @@ void ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter
 		if (History[OlderIndex].Time == HitTime) [[unlikely]]
 		{
 			FrameToCheck = History[OlderIndex];
+			bShouldInterpolate = false;
 		}
-		else
-		{
-			// TODO: interpolation.
-		}
+		//else
+		//{
+			if (bShouldInterpolate)
+			{
+				// Interpolate between older and younger.
+				FrameToCheck = InterpBetweenFrames(History[OlderIndex], History[YoungerIndex], HitTime);
+			}
+		//}
 	}
+	
+	return ConfirmHit(FrameToCheck, HitCharacter, TraceStart, HitLocation);
 }
