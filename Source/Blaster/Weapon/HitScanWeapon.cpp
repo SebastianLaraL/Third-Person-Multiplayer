@@ -43,10 +43,8 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 		WeaponTraceHit(Start, HitTarget, Hit);
 		
 		ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(Hit.GetActor());
-		
-		UE_LOG(LogTemp, Warning, TEXT("Fire: HasAuthority: %d | HitCharacter: %s"), HasAuthority(), *GetNameSafe(HitCharacter));
 
-		if (HitCharacter /*&& HasAuthority()*/ && InstigatorController) // Trace hit something.
+		if (HitCharacter && InstigatorController) // Trace hit something.
 		{
 			if (HitMap.Contains(HitCharacter))
 			{
@@ -101,8 +99,6 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 			}
 		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Fire: HitMap.Num(): %d | bUseServerSideRewind: %d | HasAuthority: %d"), HitMap.Num(), bUseServerSideRewind, HasAuthority());
-
 }
 
 void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit) const

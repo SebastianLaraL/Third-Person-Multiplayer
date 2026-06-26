@@ -51,7 +51,6 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterChar
 	constexpr FServerSideRewindResult EmptyResult{};
 	if (!HitCharacter || !HitCharacter->GetLagCompensationComponent())
 	{
-		UE_LOG(LogTemp, Error, TEXT("ServerSideRewind: HitCharacter or LagCompensationComponent invalid"));
 		return EmptyResult;
 	}
     
@@ -59,18 +58,15 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterChar
 	const TRingBuffer<FFramePackage>& History = HitCharacter->GetLagCompensationComponent()->FrameHistory;
 	if (History.Num() == 0)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ServerSideRewind: History is empty"));
 		return EmptyResult;
 	}
     
 	const float NewestHistoryTime = History.First().Time;
 	const float OldestHistoryTime = History.Last().Time;
-    
-	UE_LOG(LogTemp, Warning, TEXT("HitTime: %f | NewestHistoryTime: %f | OldestHistoryTime: %f | History.Num(): %d"), HitTime, NewestHistoryTime, OldestHistoryTime, History.Num());
-    
+
+	// Too old, too laggy to make Server side rewind.
 	if (OldestHistoryTime > HitTime)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ServerSideRewind: Too old, too laggy"));
 		return EmptyResult;
 	}
 
@@ -80,13 +76,11 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterChar
 	if (OldestHistoryTime == HitTime) [[unlikely]]
 	{
 		FrameToCheck = History.Last();
-		// bShouldInterpolate = false;
 	}
 	// Border case: newer than latest frame.
 	else if (NewestHistoryTime <= HitTime)
 	{
 		FrameToCheck = History.First();
-		// bShouldInterpolate = false;
 	}
 	// We need to browse the list and interpolate.
 	else
@@ -105,16 +99,13 @@ FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterChar
 			FrameToCheck = History[OlderIndex];
 			bShouldInterpolate = false;
 		}
-		//else
-		//{
-			if (bShouldInterpolate)
-			{
-				// Interpolate between older and younger.
-				FrameToCheck = InterpBetweenFrames(History[OlderIndex], History[YoungerIndex], HitTime);
-			}
-		//}
+
+		if (bShouldInterpolate)
+		{
+			// Interpolate between older and younger.
+			FrameToCheck = InterpBetweenFrames(History[OlderIndex], History[YoungerIndex], HitTime);
+		}
 	}
-	UE_LOG(LogTemp, Warning, TEXT("FrameToCheck.Time: %f"), FrameToCheck.Time);
 
 	return ConfirmHit(FrameToCheck, HitCharacter, TraceStart, HitLocation);
 }
@@ -123,20 +114,12 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharac
 	const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, const float HitTime,
 	AWeapon* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("ServerScoreRequest called. HitTime: %f"), HitTime);
-
 	const FServerSideRewindResult Confirm = ServerSideRewind(HitCharacter, TraceStart, HitLocation, HitTime);
-	
-	UE_LOG(LogTemp, Warning, TEXT("Confirm.bHitConfirmed: %d, Confirm.bHeadShot: %d"), Confirm.bHitConfirmed, Confirm.bHeadShot);
-
 	
 	if (BlasterCharacter && HitCharacter && DamageCauser && Confirm.bHitConfirmed)
 	{
 		UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(), BlasterCharacter->Controller, DamageCauser, UDamageType::StaticClass());
-		DRAW_DEBUG_CAPSULE(GetWorld(), HitLocation, 0.5f, 0.5f, FQuat::Identity, FColor::Red, true, -1, 0, 1);
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Magenta, TEXT("Applied damage from lag compensation"));
 	}
-		
 }
 
 void ULagCompensationComponent::SaveFramePackage()
@@ -199,8 +182,7 @@ FFramePackage ULagCompensationComponent::InterpBetweenFrames(const FFramePackage
 		const FCapsuleInformation& YoungerCapsule = YoungerFrame.HitCapsuleInfo[CapsuleInfoName];
 
 		FCapsuleInformation InterpCapsuleInfo;
-
-		// TODO: use a delta time in the next values.
+		
 		InterpCapsuleInfo.Location = FMath::Lerp(OlderCapsule.Location, YoungerCapsule.Location, InterpFraction); // FMath::VInterpTo(OlderCapsule.Location, YoungerCapsule.Location, 1.f, InterpFraction);
 		InterpCapsuleInfo.Rotation = FMath::Lerp(OlderCapsule.Rotation, YoungerCapsule.Rotation, InterpFraction);// FMath::RInterpTo(OlderCapsule.Rotation, YoungerCapsule.Rotation, 1.f, InterpFraction);
 		
@@ -217,8 +199,6 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 	ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation)
 {
 	if (!HitCharacter) return FServerSideRewindResult{};
-
-	UE_LOG(LogTemp, Warning, TEXT("ConfirmHit: TraceStart: %s | HitLocation: %s"), *TraceStart.ToString(), *HitLocation.ToString());
 
 	FFramePackage CurrentFrame;
 	CacheCapsulePositions(HitCharacter, CurrentFrame);
@@ -252,7 +232,6 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 			TraceEnd,
 			ECollisionChannel::ECC_Visibility
 		);
-		UE_LOG(LogTemp, Warning, TEXT("ConfirmHitResult.bBlockingHit (head): %d"), ConfirmHitResult.bBlockingHit);
 
 		if (ConfirmHitResult.bBlockingHit) // we hit the head, return early
 		{
@@ -277,7 +256,6 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 			TraceEnd,
 			ECollisionChannel::ECC_Visibility
 		);
-		UE_LOG(LogTemp, Warning, TEXT("ConfirmHitResult.bBlockingHit (head): %d"), ConfirmHitResult.bBlockingHit);
 
 		if (ConfirmHitResult.bBlockingHit)
 		{
@@ -288,7 +266,7 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 	}
 
 	ResetHitCapsules(HitCharacter, CurrentFrame);
-	EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics); // TODO: test with query only.
+	EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
 	return FServerSideRewindResult{ false, false };
 }
 
