@@ -40,6 +40,9 @@ public:
 	
 	void OnMatchStateSet(const FName& State);
 	
+	virtual float GetServerTime() const; // Synced with server world clock.
+	float SingleTripTime = 0.f; // Half round trip time.
+	
 	// Pause.
 	
 	void RemovePauseMenu();
@@ -70,8 +73,6 @@ protected:
 	// Set HUD time and check time sync.
 	// It displays time according to match or announcement case.
 	void SetHUDTime();
-	
-	virtual float GetServerTime() const; // Synced with server world clock.
 	
 	/**
 	 * Sync time between client and server.

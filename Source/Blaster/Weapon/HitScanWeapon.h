@@ -26,9 +26,6 @@ protected:
 	// Outs the result of the line trace.
 	void WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit) const;
 private:
-	
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f))
-	float Damage = 10.f;
 		
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1), Category = "Weapon Scatter")
 	uint32 NumberOfPellets = 1;

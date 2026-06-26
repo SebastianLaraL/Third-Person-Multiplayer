@@ -153,6 +153,17 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	FName MuzzleSocketName = FName("MuzzleFlash");
 
+	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f, AllowPrivateAccess = true))
+	float Damage = 10.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bUseServerSideRewind = false;
+	
+	UPROPERTY()
+	TObjectPtr<ABlasterCharacter> BlasterOwnerCharacter;
+	
+	UPROPERTY()
+	TObjectPtr<ABlasterPlayerController> BlasterOwnerController;
 private:
 	/* Mesh */
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
@@ -206,12 +217,6 @@ private:
 	UFUNCTION(Client, Reliable)
 	void ClientAddAmmo(const int32 AmmoToAdd);
 	
-	// UPROPERTY()
-	TObjectPtr<ABlasterCharacter> BlasterOwnerCharacter;
-	
-	// UPROPERTY()
-	TObjectPtr<ABlasterPlayerController> BlasterOwnerController;
-	
 	UPROPERTY(EditAnywhere)
 	EWeaponType WeaponType;
 	
@@ -224,7 +229,7 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Scatter", meta = (ClampMin = 0.000001f))
 	float SphereRadius = 75.f;
-	
+		
 	void SpendRound();
 	
 	UFUNCTION()
@@ -241,4 +246,5 @@ public:
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
 	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
+	FORCEINLINE float GetDamage() const { return Damage; }
 };

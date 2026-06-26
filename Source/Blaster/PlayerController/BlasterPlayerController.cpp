@@ -373,7 +373,8 @@ void ABlasterPlayerController::ClientReportServerTime_Implementation(const float
 {
 	// The time it took for the client request to get to the server.
 	const float RoundTripTime = GetWorld()->GetTimeSeconds() - TimeOfClientRequest;
-	const float CurrentServerTime = TimeServerReceivedClientRequest + 0.5f * RoundTripTime;
+	SingleTripTime = 0.5f * RoundTripTime;
+	const float CurrentServerTime = TimeServerReceivedClientRequest + SingleTripTime;
 	// Dividing by two is just an approximation.
 	ClientServerDelta = CurrentServerTime - GetWorld()->GetTimeSeconds();
 }

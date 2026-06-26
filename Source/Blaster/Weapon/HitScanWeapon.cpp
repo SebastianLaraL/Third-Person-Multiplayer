@@ -7,6 +7,10 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
+#include "Blaster/BlasterComponents/LagCompensationComponent.h"
+#include "Blaster/Character/BlasterCharacter.h"
+#include "Blaster/PlayerController/BlasterPlayerController.h"
+#include "Blaster/Utils/DebugHelpers.h"
 
 AHitScanWeapon::AHitScanWeapon()
 {
@@ -31,24 +35,26 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetMesh());
 	const FVector Start = SocketTransform.GetLocation();
 	
-	TMap<AActor*, uint32> HitMap; // Pair of values for a character and the number of hits they receive.
+	TMap<ABlasterCharacter*, uint32> HitMap; // Pair of values for a character and the number of hits they receive.
 	for (uint32 Index = 0; Index < NumberOfPellets; Index++)
 	{
 		// Trace will ignore owner.
 		FHitResult Hit;
 		WeaponTraceHit(Start, HitTarget, Hit);
 		
-		auto HitActor = Hit.GetActor();
+		ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(Hit.GetActor());
 		
-		if (HitActor && HasAuthority() && InstigatorController) // Trace hit something.
+		UE_LOG(LogTemp, Warning, TEXT("Fire: HasAuthority: %d | HitCharacter: %s"), HasAuthority(), *GetNameSafe(HitCharacter));
+
+		if (HitCharacter /*&& HasAuthority()*/ && InstigatorController) // Trace hit something.
 		{
-			if (HitMap.Contains(HitActor))
+			if (HitMap.Contains(HitCharacter))
 			{
-				HitMap[HitActor]++; // Increase the number of hits.
+				HitMap[HitCharacter]++; // Increase the number of hits.
 			}
 			else
 			{
-				HitMap.Emplace(HitActor,1);
+				HitMap.Emplace(HitCharacter,1);
 			}
 		}
 		/* Impact VFX/SFX. */
@@ -64,19 +70,39 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 		// Hit sound.
 	}
 	// Apply damage to all actors according to the number of hits received.
-	for (auto HitPair : HitMap)
+	for (const auto& HitPair : HitMap)
 	{
-		if (HitPair.Key && HasAuthority() && InstigatorController)
+		ABlasterCharacter* HitBlasterCharacter = HitPair.Key;
+		if (!HitBlasterCharacter || !InstigatorController) continue;
+		
+		if (HasAuthority() && !bUseServerSideRewind)
 		{
-			UGameplayStatics::ApplyDamage(
-				HitPair.Key,
+			UGameplayStatics::ApplyDamage(HitPair.Key,
 				Damage * HitPair.Value, // Number of pellets that hit multiplied by damage.
 				InstigatorController,
 				this,
-				UDamageType::StaticClass()
-			);
+				UDamageType::StaticClass());
+		}
+		
+		if (!HasAuthority() && bUseServerSideRewind)
+		{
+			BlasterOwnerCharacter = BlasterOwnerCharacter ? BlasterOwnerCharacter.Get() : Cast<ABlasterCharacter>(OwnerPawn);
+			BlasterOwnerController = BlasterOwnerController ? BlasterOwnerController.Get() : Cast<ABlasterPlayerController>(InstigatorController);
+
+			if (BlasterOwnerController && BlasterOwnerCharacter && BlasterOwnerCharacter->GetLagCompensationComponent())
+			{
+				BlasterOwnerCharacter->GetLagCompensationComponent()->ServerScoreRequest(
+					HitBlasterCharacter,
+					Start,
+					HitTarget,
+					BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime,
+					this
+				);
+			}
 		}
 	}
+	UE_LOG(LogTemp, Warning, TEXT("Fire: HitMap.Num(): %d | bUseServerSideRewind: %d | HasAuthority: %d"), HitMap.Num(), bUseServerSideRewind, HasAuthority());
+
 }
 
 void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit) const
@@ -95,7 +121,8 @@ void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector& Hi
 	{
 		BeamEnd = OutHit.ImpactPoint;
 	}
-	
+	DRAW_DEBUG_SPHERE(GetWorld(), BeamEnd, 16.f, 12, FColor::Orange, true);
+
 	if (BeamEffectLegacy)
 	{
 		UParticleSystemComponent* Beam = UGameplayStatics::SpawnEmitterAtLocation(
