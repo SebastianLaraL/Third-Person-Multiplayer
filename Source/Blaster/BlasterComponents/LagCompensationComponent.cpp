@@ -201,11 +201,11 @@ FFramePackage ULagCompensationComponent::InterpBetweenFrames(const FFramePackage
 		FCapsuleInformation InterpCapsuleInfo;
 
 		// TODO: use a delta time in the next values.
-		InterpCapsuleInfo.Location = FMath::VInterpTo(OlderCapsule.Location, YoungerCapsule.Location, 1.f, InterpFraction);
-		InterpCapsuleInfo.Rotation = FMath::RInterpTo(OlderCapsule.Rotation, YoungerCapsule.Rotation, 1.f, InterpFraction);
+		InterpCapsuleInfo.Location = FMath::Lerp(OlderCapsule.Location, YoungerCapsule.Location, InterpFraction); // FMath::VInterpTo(OlderCapsule.Location, YoungerCapsule.Location, 1.f, InterpFraction);
+		InterpCapsuleInfo.Rotation = FMath::Lerp(OlderCapsule.Rotation, YoungerCapsule.Rotation, InterpFraction);// FMath::RInterpTo(OlderCapsule.Rotation, YoungerCapsule.Rotation, 1.f, InterpFraction);
 		
-		InterpCapsuleInfo.Radius = FMath::FInterpTo(OlderCapsule.Radius, YoungerCapsule.Radius, 1.f, InterpFraction); 
-		InterpCapsuleInfo.CapsuleHalfHeight = FMath::FInterpTo(OlderCapsule.CapsuleHalfHeight, YoungerCapsule.CapsuleHalfHeight, 1.f, InterpFraction);
+		InterpCapsuleInfo.Radius =  FMath::Lerp(OlderCapsule.Radius, YoungerCapsule.Radius, InterpFraction);// FMath::FInterpTo(OlderCapsule.Radius, YoungerCapsule.Radius, 1.f, InterpFraction); 
+		InterpCapsuleInfo.CapsuleHalfHeight = FMath::Lerp(OlderCapsule.CapsuleHalfHeight, YoungerCapsule.CapsuleHalfHeight, InterpFraction);// FMath::FInterpTo(OlderCapsule.CapsuleHalfHeight, YoungerCapsule.CapsuleHalfHeight, 1.f, InterpFraction);
 
 		InterpFramePackage.HitCapsuleInfo.Add(CapsuleInfoName, InterpCapsuleInfo);
 	}
