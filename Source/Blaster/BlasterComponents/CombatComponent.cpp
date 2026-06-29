@@ -236,8 +236,12 @@ void UCombatComponent::Fire()
 
 void UCombatComponent::FireProjectileWeapon()
 {
-	if (!Character->HasAuthority()) LocalFire(HitTarget);
-	ServerFire(HitTarget);
+	if (Character && EquippedWeapon)
+	{
+		HitTarget = EquippedWeapon->bUseScatter ? EquippedWeapon->TraceEndWithScatter(HitTarget) : HitTarget;
+		if (!Character->HasAuthority()) LocalFire(HitTarget);
+		ServerFire(HitTarget);
+	}
 }
 
 void UCombatComponent::FireHitScanWeapon()
@@ -333,7 +337,7 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 		{
 			const float DistanceToCharacter = (Character->GetActorLocation() - Start).Size();
 			Start += CrosshairWorldDirection * (DistanceToCharacter + StartOfTraceOffset);
-			DRAW_DEBUG_SPHERE(GetWorld(), Start, 12.f, 12, FColor::Blue, false);
+			DRAW_DEBUG_SPHERE(GetWorld(), Start, 12.f, 12, FColor::Blue, false, -1, 0, 0);
 		}
 
 		const FVector End = CrosshairWorldPosition + CrosshairWorldDirection * TraceLength;
@@ -357,7 +361,7 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 			TraceHitResult.ImpactPoint = End;
 		}
 
-		DRAW_DEBUG_SPHERE(GetWorld(), TraceHitResult.ImpactPoint, 12.f, 12, FColor::Red, false);
+		DRAW_DEBUG_SPHERE(GetWorld(), TraceHitResult.ImpactPoint, 12.f, 12, FColor::Red, false, -1, 0, 0);
 	}
 }
 

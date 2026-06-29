@@ -11,6 +11,7 @@
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Blaster/Utils/DebugHelpers.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AHitScanWeapon::AHitScanWeapon()
 {
@@ -98,6 +99,33 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 				);
 			}
 		}
+	}
+}
+
+void AHitScanWeapon::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector>& HitTargets) const
+{
+	if(GetWeaponType() != EWeaponType::EWT_Shotgun || FireType != EFireType::EFT_Shotgun)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Weapon tried to ShotgunTraceEndWithScatter but it is not setup as a shotgun. %s"), *GetNameSafe(this))
+		return;
+	}
+	const USkeletalMeshSocket* MuzzleFlashSocket = GetMesh()->GetSocketByName(MuzzleSocketName);
+	if (!MuzzleFlashSocket) return;
+
+	const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetMesh());
+	const FVector Start = SocketTransform.GetLocation();
+	
+	const FVector ToTargetNormalized = (HitTarget - Start).GetSafeNormal();
+	const FVector SphereCenter = Start + ToTargetNormalized * DistanceToSphere;
+	
+	for (uint32 Index = 0; Index <NumberOfPellets; ++Index)
+	{
+		const FVector RandVec = UKismetMathLibrary::RandomUnitVector() * FMath::FRandRange(0.f, SphereRadius);
+		const FVector EndLoc = SphereCenter + RandVec;
+		FVector ToEndLoc = EndLoc - Start;
+		ToEndLoc = Start + ToEndLoc * MaxTraceDistance / ToEndLoc.Size();
+
+		HitTargets.Add(ToEndLoc);
 	}
 }
 

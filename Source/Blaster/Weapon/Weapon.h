@@ -156,6 +156,19 @@ protected:
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f, AllowPrivateAccess = true))
 	float Damage = 10.f;
 	
+	UPROPERTY(EditAnywhere)
+	EWeaponType WeaponType;
+	
+	/**
+	* Trace end with scatter
+	*/
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Scatter", meta = (ClampMin = 0.000001f))
+	float DistanceToSphere = 800.f;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Scatter", meta = (ClampMin = 0.000001f))
+	float SphereRadius = 75.f;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bUseServerSideRewind = false;
 	
@@ -216,19 +229,6 @@ private:
 	
 	UFUNCTION(Client, Reliable)
 	void ClientAddAmmo(const int32 AmmoToAdd);
-	
-	UPROPERTY(EditAnywhere)
-	EWeaponType WeaponType;
-	
-	/**
-	* Trace end with scatter
-	*/
-
-	UPROPERTY(EditAnywhere, Category = "Weapon Scatter", meta = (ClampMin = 0.000001f))
-	float DistanceToSphere = 800.f;
-
-	UPROPERTY(EditAnywhere, Category = "Weapon Scatter", meta = (ClampMin = 0.000001f))
-	float SphereRadius = 75.f;
 		
 	void SpendRound();
 	
