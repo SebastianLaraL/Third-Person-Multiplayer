@@ -235,10 +235,11 @@ FVector AWeapon::TraceEndWithScatter(const FVector& HitTarget) const
 
 	DRAW_DEBUG_SPHERE(GetWorld(), SphereCenter, SphereRadius, 12, FColor::Red, true, -1, 0, 0);
 	DRAW_DEBUG_SPHERE(GetWorld(), EndLoc, 4.f, 12, FColor::Orange, true, -1, 0, 0);
-	DrawDebugLine(
+	DrawDebugDirectionalArrow(
 		GetWorld(),
 		TraceStart,
 		FVector(TraceStart + ToEndLoc * MaxTraceDistance / ToEndLoc.Size()),
+		10.f,
 		FColor::Cyan,
 		true);
 
