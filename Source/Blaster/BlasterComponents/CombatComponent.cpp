@@ -15,6 +15,7 @@
 #include "Blaster/Weapon/ProjectileGrenade.h"
 #include "Components/BoxComponent.h"
 #include "Blaster/Utils/DebugHelpers.h"
+#include "Blaster/Weapon/HitScanWeapon.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -225,16 +226,18 @@ void UCombatComponent::Fire()
 		CrosshairShootingFactor += CrosshairsShootingFactorIncrement;
 		switch (EquippedWeapon->FireType)
 		{
-		case EFireType::EFT_Projectile:		FireProjectileWeapon();		break;
-		case EFireType::EFT_HitScan:		FireHitScanWeapon();		break;
-		case EFireType::EFT_Shotgun:		FireShotgun();				break;
-		default:														break;
+		case EFireType::EFT_Projectile:
+		case EFireType::EFT_HitScan:
+			FireWeapon();				break;
+		case EFireType::EFT_Shotgun:
+			FireShotgun();				break;
+		default:						break;
 		}
 	}
 	StartFireTimer();
 }
 
-void UCombatComponent::FireProjectileWeapon()
+void UCombatComponent::FireWeapon()
 {
 	if (Character && EquippedWeapon)
 	{
@@ -244,38 +247,48 @@ void UCombatComponent::FireProjectileWeapon()
 	}
 }
 
-void UCombatComponent::FireHitScanWeapon()
-{
-	if (EquippedWeapon)
-	{
-		HitTarget = EquippedWeapon->bUseScatter ? EquippedWeapon->TraceEndWithScatter(HitTarget) : HitTarget;
-		if (!Character->HasAuthority()) LocalFire(HitTarget);
-		ServerFire(HitTarget);
-	}
-}
-
 void UCombatComponent::FireShotgun()
 {
-	// TODO: This was a mess when I implemented it.
+	const AHitScanWeapon* HitScanWeapon = Cast<AHitScanWeapon>(EquippedWeapon);
+	if (Character && HitScanWeapon && HitScanWeapon->FireType == EFireType::EFT_Shotgun)
+	{
+		TArray<FVector_NetQuantize> HitTargets;
+		// TODO: could optimize a bit calling HitTargets.Reserve(NumberOfPellets).
+		HitScanWeapon->ShotgunTraceEndWithScatter(HitTarget, HitTargets);
+		if (!Character->HasAuthority()) ShotgunLocalFire(HitTargets);
+		ServerShotgunFire(HitTargets);
+	}
 }
 
 void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 {
-	if (!EquippedWeapon) return;
+	if (!EquippedWeapon || !Character) return;
 	// Allow characters with a shotgun to fire when they are reloading.
-	if (Character && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() ==
+	if (CombatState == ECombatState::ECS_Reloading || CombatState == ECombatState::ECS_Unoccupied && EquippedWeapon->GetWeaponType() ==
 		EWeaponType::EWT_Shotgun)
 	{
 		Character->PlayFireMontage(bIsAiming);
-		EquippedWeapon->Fire(TraceHitTarget);
+		EquippedWeapon->Fire(TraceHitTarget); 
 		CombatState = ECombatState::ECS_Unoccupied;
 		return;
 	}
 	// Fire only when we are not reloading.
-	if (Character && CombatState == ECombatState::ECS_Unoccupied)
+	if (CombatState == ECombatState::ECS_Unoccupied)
 	{
 		Character->PlayFireMontage(bIsAiming);
 		EquippedWeapon->Fire(TraceHitTarget);
+	}
+}
+
+void UCombatComponent::ShotgunLocalFire(const TArray<FVector_NetQuantize>& TraceHitTargets)
+{
+	AHitScanWeapon* Shotgun = Cast<AHitScanWeapon>(EquippedWeapon);
+	if (Shotgun == nullptr || Character == nullptr) return;
+	if (CombatState == ECombatState::ECS_Reloading || CombatState == ECombatState::ECS_Unoccupied)
+	{
+		Character->PlayFireMontage(bIsAiming);
+		Shotgun->FireShotgun(TraceHitTargets);
+		CombatState = ECombatState::ECS_Unoccupied;
 	}
 }
 
@@ -313,6 +326,18 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 {
 	if (Character && Character->IsLocallyControlled() && !Character->HasAuthority()) return;
 	LocalFire(TraceHitTarget);
+}
+
+void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets)
+{
+	MulticastShotgunFire(TraceHitTargets);
+}
+
+
+void UCombatComponent::MulticastShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets)
+{
+	if (Character && Character->IsLocallyControlled() && !Character->HasAuthority()) return;
+	ShotgunLocalFire(TraceHitTargets);
 }
 
 void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)

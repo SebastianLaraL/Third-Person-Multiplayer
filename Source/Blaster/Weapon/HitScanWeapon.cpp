@@ -102,7 +102,67 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	}
 }
 
-void AHitScanWeapon::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector>& HitTargets) const
+void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
+{
+	AWeapon::Fire(FVector());
+	const APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn) return;
+	AController* InstigatorController = OwnerPawn->GetController();
+
+	const USkeletalMeshSocket* MuzzleFlashSocket = GetMesh()->GetSocketByName("MuzzleFlash");
+	if (!MuzzleFlashSocket) return;
+	
+	auto World = GetWorld();
+	if (!World) return;
+
+	const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetMesh());
+	const FVector Start = SocketTransform.GetLocation();
+
+	// Maps hit character to number of times hit
+	TMap<AActor*, uint32> HitMap;
+	for (FVector_NetQuantize HitTarget : HitTargets)
+	{
+		FHitResult FireHit;
+		WeaponTraceHit(Start, HitTarget, FireHit);
+
+		if (AActor* HitActor = FireHit.GetActor())
+		{
+			if (HitMap.Contains(HitActor))
+			{
+				HitMap[HitActor]++;
+			}
+			else
+			{
+				HitMap.Emplace(HitActor, 1);
+			}
+			/* Impact VFX/SFX. */
+			if (ImpactEffect)
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+					World,
+					ImpactEffect,
+					FireHit.ImpactPoint,
+					FireHit.ImpactNormal.Rotation()
+				);
+			}
+		}
+	}
+	for (const auto& HitPair : HitMap)
+	{
+		if (HitPair.Key && HasAuthority() && InstigatorController)
+		{
+			UGameplayStatics::ApplyDamage(
+				HitPair.Key, // Character that was hit
+				Damage * HitPair.Value, // Multiply Damage by number of times hit
+				InstigatorController,
+				this,
+				UDamageType::StaticClass()
+			);
+		}
+	}
+}
+
+void AHitScanWeapon::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets) const
 {
 	if(GetWeaponType() != EWeaponType::EWT_Shotgun || FireType != EFireType::EFT_Shotgun)
 	{

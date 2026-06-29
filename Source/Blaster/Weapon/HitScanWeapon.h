@@ -21,7 +21,8 @@ class BLASTER_API AHitScanWeapon : public AWeapon
 public:
 	AHitScanWeapon();
 	virtual void Fire(const FVector& HitTarget) override;
-	void ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector>& HitTargets) const;
+	virtual void FireShotgun(const TArray<FVector_NetQuantize>& HitTargets);
+	void ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets) const;
 protected:
 	// Performs a line trace depending on whether this weapon uses scatter or not and spawns a beam effect.
 	// Outs the result of the line trace.
