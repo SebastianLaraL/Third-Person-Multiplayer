@@ -48,66 +48,8 @@ void ULagCompensationComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 FServerSideRewindResult ULagCompensationComponent::ServerSideRewind(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart,
 	const FVector_NetQuantize& HitLocation, const float HitTime)
 {
-	constexpr FServerSideRewindResult EmptyResult{};
-	if (!HitCharacter || !HitCharacter->GetLagCompensationComponent())
-	{
-		return EmptyResult;
-	}
-    
-	bool bShouldInterpolate = true;
-	const TRingBuffer<FFramePackage>& History = HitCharacter->GetLagCompensationComponent()->FrameHistory;
-	if (History.Num() == 0)
-	{
-		return EmptyResult;
-	}
-    
-	const float NewestHistoryTime = History.First().Time;
-	const float OldestHistoryTime = History.Last().Time;
-
-	// Too old, too laggy to make Server side rewind.
-	if (OldestHistoryTime > HitTime)
-	{
-		return EmptyResult;
-	}
-
-	FFramePackage FrameToCheck;
-
-	// Border case exact match with the oldest.
-	if (OldestHistoryTime == HitTime) [[unlikely]]
-	{
-		FrameToCheck = History.Last();
-	}
-	// Border case: newer than latest frame.
-	else if (NewestHistoryTime <= HitTime)
-	{
-		FrameToCheck = History.First();
-	}
-	// We need to browse the list and interpolate.
-	else
-	{
-		int32 OlderIndex = 0; // Start at newest (First).
-		while (History[OlderIndex].Time > HitTime)
-		{
-			++OlderIndex;
-		}
-		
-		const int32 YoungerIndex = OlderIndex - 1; // The previous in the browsing is the newest.
-		
-		// Unlikely border case: exact match in this point.
-		if (History[OlderIndex].Time == HitTime) [[unlikely]]
-		{
-			FrameToCheck = History[OlderIndex];
-			bShouldInterpolate = false;
-		}
-
-		if (bShouldInterpolate)
-		{
-			// Interpolate between older and younger.
-			FrameToCheck = InterpBetweenFrames(History[OlderIndex], History[YoungerIndex], HitTime);
-		}
-	}
-
-	return ConfirmHit(FrameToCheck, HitCharacter, TraceStart, HitLocation);
+	const FFramePackage FrameToCheck = GetFrameToCheck(HitCharacter, HitTime);
+	return ConfirmHit(FrameToCheck,  HitCharacter, TraceStart, HitLocation);
 }
 
 void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharacter* HitCharacter,
@@ -195,8 +137,72 @@ FFramePackage ULagCompensationComponent::InterpBetweenFrames(const FFramePackage
 	return InterpFramePackage;
 }
 
+FFramePackage ULagCompensationComponent::GetFrameToCheck(ABlasterCharacter* HitCharacter, const float HitTime) const
+{
+	FFramePackage EmptyResult{};
+	if (!HitCharacter || !HitCharacter->GetLagCompensationComponent())
+	{
+		return EmptyResult;
+	}
+    
+	bool bShouldInterpolate = true;
+	const TRingBuffer<FFramePackage>& History = HitCharacter->GetLagCompensationComponent()->FrameHistory;
+	if (History.Num() == 0)
+	{
+		return EmptyResult;
+	}
+    
+	const float NewestHistoryTime = History.First().Time;
+	const float OldestHistoryTime = History.Last().Time;
+
+	// Too old, too laggy to make Server side rewind.
+	if (OldestHistoryTime > HitTime)
+	{
+		return EmptyResult;
+	}
+
+	FFramePackage FrameToCheck{};
+
+	// Border case exact match with the oldest.
+	if (OldestHistoryTime == HitTime) [[unlikely]]
+	{
+		FrameToCheck = History.Last();
+	}
+	// Border case: newer than latest frame.
+	else if (NewestHistoryTime <= HitTime)
+	{
+		FrameToCheck = History.First();
+	}
+	// We need to browse the list and interpolate.
+	else
+	{
+		int32 OlderIndex = 0; // Start at newest (First).
+		while (History[OlderIndex].Time > HitTime)
+		{
+			++OlderIndex;
+		}
+		
+		const int32 YoungerIndex = OlderIndex - 1; // The previous in the browsing is the newest.
+		
+		// Unlikely border case: exact match in this point.
+		if (History[OlderIndex].Time == HitTime) [[unlikely]]
+		{
+			FrameToCheck = History[OlderIndex];
+			bShouldInterpolate = false;
+		}
+
+		if (bShouldInterpolate)
+		{
+			// Interpolate between older and younger.
+			FrameToCheck = InterpBetweenFrames(History[OlderIndex], History[YoungerIndex], HitTime);
+		}
+	}
+
+	return FrameToCheck;
+}
+
 FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackage& Package,
-	ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation)
+                                                              ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation)
 {
 	if (!HitCharacter) return FServerSideRewindResult{};
 
@@ -325,6 +331,27 @@ void ULagCompensationComponent::EnableCharacterMeshCollision(const ABlasterChara
 	{
 		HitCharacter->GetMesh()->SetCollisionEnabled(CollisionEnabled);
 	}
+}
+
+FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewindResult(const TArray<AActor*>& HitActors,
+	const FVector_NetQuantize& FramePackages, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const
+{
+	if (HitActors.IsEmpty()) return {};
+	
+	TArray<FFramePackage> FramesToCheck;
+	FramesToCheck.Reserve(HitActors.Num());
+	
+	for (AActor* HitActor : HitActors)
+	{
+		FramesToCheck.Add(GetFrameToCheck(HitActor, HitTime));
+	}
+	return {}; // TODO. return valid info.
+}
+
+FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(const TArray<FFramePackage>& FramePackages,
+                                                                            const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations) const
+{
+	return {}; // TODO
 }
 
 void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, const FColor& Color) const

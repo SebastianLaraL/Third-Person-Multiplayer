@@ -52,6 +52,18 @@ struct FServerSideRewindResult
 	bool bHeadShot;
 };
 
+USTRUCT(BlueprintType)
+struct FShotgunServerSideRewindResult
+{
+	GENERATED_BODY()
+	
+	UPROPERTY()
+	TMap<AActor*, uint32> HeadShots;
+	
+	UPROPERTY()
+	TMap<AActor*, uint32> BodyShots;
+};
+
 class ABlasterCharacter;
 class ABlasterPlayerController;
 class AWeapon;
@@ -75,11 +87,18 @@ protected:
 	void SaveFramePackage();
 	void SaveFramePackage(FFramePackage& Package);
 	FFramePackage InterpBetweenFrames(const FFramePackage& OlderFrame, const FFramePackage& YoungerFrame, const float HitTime) const;
+	FFramePackage GetFrameToCheck(ABlasterCharacter* HitCharacter, const float HitTime) const;
 	FServerSideRewindResult ConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation);
 	void CacheCapsulePositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage) const;
 	void MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
 	void ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
 	void EnableCharacterMeshCollision(const ABlasterCharacter* HitCharacter, const ECollisionEnabled::Type CollisionEnabled) const;
+	
+	//
+	// Shotgun
+	//
+	FShotgunServerSideRewindResult ShotgunServerSideRewindResult(const TArray<AActor*>& HitActors, const FVector_NetQuantize& FramePackages, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const;
+	FShotgunServerSideRewindResult ShotgunConfirmHit(const TArray<FFramePackage>& FramePackages, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations) const;
 private:
 	UPROPERTY()
 	TObjectPtr<ABlasterCharacter> BlasterCharacter;
