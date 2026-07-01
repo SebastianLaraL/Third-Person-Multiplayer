@@ -140,3 +140,23 @@ void AProjectile::Destroyed()
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation(), GetActorRotation());
 	}
 }
+
+
+#if WITH_EDITOR
+void AProjectile::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	
+	const FName PropertyName = PropertyChangedEvent.Property != nullptr ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+	
+	// Keep projectile movement speeds' values equal to InitialSpeed property value.
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(ThisClass, InitialSpeed))
+	{
+		if (ProjectileMovement)
+		{
+			ProjectileMovement->InitialSpeed = InitialSpeed;
+			ProjectileMovement->MaxSpeed = InitialSpeed;
+		}
+	}
+}
+#endif
