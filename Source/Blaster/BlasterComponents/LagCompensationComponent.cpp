@@ -376,11 +376,6 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewin
 FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(const TArray<FFramePackage>& FramePackages,
                                                                             const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations) const
 {
-	for (const auto& Frame : FramePackages)
-	{
-		if (!Frame.Character) return FShotgunServerSideRewindResult();
-	}
-	
 	FShotgunServerSideRewindResult ShotgunResult;
 	TArray<FFramePackage> CurrentFrames;
 	CurrentFrames.Reserve(FramePackages.Num());
@@ -388,6 +383,8 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 	for (const FFramePackage& Frame : FramePackages)
 	{
 		FFramePackage CurrentFrame;
+		if (!CurrentFrame.Character) continue;
+		
 		CurrentFrame.Character = Frame.Character;
 		CacheCapsulePositions(Frame.Character, CurrentFrame);
 		MoveCapsules(Frame.Character, Frame);
