@@ -222,7 +222,7 @@ FFramePackage ULagCompensationComponent::GetFrameToCheck(ABlasterCharacter* HitC
 			FrameToCheck = InterpBetweenFrames(History[OlderIndex], History[YoungerIndex], HitTime);
 		}
 	}
-
+	FrameToCheck.Character = HitCharacter;
 	return FrameToCheck;
 }
 

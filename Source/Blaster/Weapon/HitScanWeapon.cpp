@@ -88,7 +88,7 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 			BlasterOwnerCharacter = BlasterOwnerCharacter ? BlasterOwnerCharacter.Get() : Cast<ABlasterCharacter>(OwnerPawn);
 			BlasterOwnerController = BlasterOwnerController ? BlasterOwnerController.Get() : Cast<ABlasterPlayerController>(InstigatorController);
 
-			if (BlasterOwnerController && BlasterOwnerCharacter && BlasterOwnerCharacter->GetLagCompensationComponent())
+			if (BlasterOwnerController && BlasterOwnerCharacter && BlasterOwnerCharacter->GetLagCompensationComponent() && BlasterOwnerCharacter->IsLocallyControlled())
 			{
 				BlasterOwnerCharacter->GetLagCompensationComponent()->ServerScoreRequest(
 					HitBlasterCharacter,
@@ -147,16 +147,37 @@ void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 			}
 		}
 	}
+	
+	TArray<ABlasterCharacter*> HitCharacters;
+	
 	for (const auto& HitPair : HitMap)
 	{
-		if (HitPair.Key && HasAuthority() && InstigatorController)
+		if (HitPair.Key && InstigatorController)
 		{
-			UGameplayStatics::ApplyDamage(
-				HitPair.Key, // Character that was hit
-				Damage * HitPair.Value, // Multiply Damage by number of times hit
-				InstigatorController,
-				this,
-				UDamageType::StaticClass()
+			if (HasAuthority() && !bUseServerSideRewind)
+			{
+				UGameplayStatics::ApplyDamage(
+					HitPair.Key, // Character that was hit
+					Damage * HitPair.Value, // Multiply Damage by number of times hit
+					InstigatorController,
+					this,
+					UDamageType::StaticClass()
+				);
+			}
+			if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(HitPair.Key)) // QUICKFIX
+			{
+				HitCharacters.Add(HitCharacter);
+			}
+		}
+	}
+	if (!HasAuthority() && bUseServerSideRewind)
+	{
+		if (!BlasterOwnerCharacter || ! BlasterOwnerController) return; // I could make checks for both of these but nah.
+		if (BlasterOwnerCharacter->GetLagCompensationComponent() && BlasterOwnerCharacter->IsLocallyControlled())
+		{
+			BlasterOwnerCharacter->GetLagCompensationComponent()->ShotgunServerScoreRequest(
+				HitCharacters, Start, HitTargets,
+				BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime
 			);
 		}
 	}
