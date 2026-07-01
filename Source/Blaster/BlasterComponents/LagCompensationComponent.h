@@ -7,6 +7,8 @@
 #include "Containers/RingBuffer.h"
 #include "LagCompensationComponent.generated.h"
 
+class ABlasterCharacter;
+
 USTRUCT(BlueprintType)
 struct FCapsuleInformation
 {
@@ -37,6 +39,9 @@ struct FFramePackage
 	float Time;
 	
 	UPROPERTY()
+	TObjectPtr<ABlasterCharacter> Character;
+	
+	UPROPERTY()
 	TMap<FName, FCapsuleInformation> HitCapsuleInfo;
 };
 
@@ -64,7 +69,6 @@ struct FShotgunServerSideRewindResult
 	TMap<AActor*, uint32> BodyShots;
 };
 
-class ABlasterCharacter;
 class ABlasterPlayerController;
 class AWeapon;
 
@@ -90,14 +94,14 @@ protected:
 	FFramePackage GetFrameToCheck(ABlasterCharacter* HitCharacter, const float HitTime) const;
 	FServerSideRewindResult ConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation);
 	void CacheCapsulePositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage) const;
-	void MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
-	void ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package);
+	void MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package) const;
+	void ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package) const;
 	void EnableCharacterMeshCollision(const ABlasterCharacter* HitCharacter, const ECollisionEnabled::Type CollisionEnabled) const;
 	
 	//
 	// Shotgun
 	//
-	FShotgunServerSideRewindResult ShotgunServerSideRewindResult(const TArray<AActor*>& HitActors, const FVector_NetQuantize& FramePackages, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const;
+	FShotgunServerSideRewindResult ShotgunServerSideRewindResult(const TArray<ABlasterCharacter*>& HitActors, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const;
 	FShotgunServerSideRewindResult ShotgunConfirmHit(const TArray<FFramePackage>& FramePackages, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations) const;
 private:
 	UPROPERTY()

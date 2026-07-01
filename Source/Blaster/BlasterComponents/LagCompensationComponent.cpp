@@ -96,6 +96,7 @@ void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package)
 	if (!BlasterCharacter) return;
 	
 	Package.Time = GetWorld()->GetTimeSeconds();
+	Package.Character = BlasterCharacter;
 	for (const auto& Capsule : BlasterCharacter->HitCollisionCapsules)
 	{
 		FCapsuleInformation CapsuleInformation;
@@ -293,7 +294,7 @@ void ULagCompensationComponent::CacheCapsulePositions(ABlasterCharacter* HitChar
 	}
 }
 
-void ULagCompensationComponent::MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package)
+void ULagCompensationComponent::MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package) const
 {
 	if (!HitCharacter) return;
 	
@@ -308,7 +309,7 @@ void ULagCompensationComponent::MoveCapsules(ABlasterCharacter* HitCharacter, co
 	}
 }
 
-void ULagCompensationComponent::ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package)
+void ULagCompensationComponent::ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package) const
 {
 	if (!HitCharacter) return;
 	
@@ -333,25 +334,183 @@ void ULagCompensationComponent::EnableCharacterMeshCollision(const ABlasterChara
 	}
 }
 
-FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewindResult(const TArray<AActor*>& HitActors,
-	const FVector_NetQuantize& FramePackages, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const
+FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewindResult(const TArray<ABlasterCharacter*>& HitActors,
+	const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const
 {
 	if (HitActors.IsEmpty()) return {};
 	
 	TArray<FFramePackage> FramesToCheck;
 	FramesToCheck.Reserve(HitActors.Num());
 	
-	for (AActor* HitActor : HitActors)
+	for (ABlasterCharacter* HitActor : HitActors)
 	{
 		FramesToCheck.Add(GetFrameToCheck(HitActor, HitTime));
 	}
-	return {}; // TODO. return valid info.
+	return ShotgunConfirmHit(FramesToCheck, TraceStart, HitLocations);
 }
 
 FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(const TArray<FFramePackage>& FramePackages,
                                                                             const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations) const
 {
-	return {}; // TODO
+	for (const auto& Frame : FramePackages)
+	{
+		if (!Frame.Character) return FShotgunServerSideRewindResult();
+	}
+	
+	FShotgunServerSideRewindResult ShotgunResult;
+	TArray<FFramePackage> CurrentFrames;
+	CurrentFrames.Reserve(FramePackages.Num());
+	
+	for (const FFramePackage& Frame : FramePackages)
+	{
+		FFramePackage CurrentFrame;
+		CurrentFrame.Character = Frame.Character;
+		CacheCapsulePositions(Frame.Character, CurrentFrame);
+		MoveCapsules(Frame.Character, Frame);
+		EnableCharacterMeshCollision(Frame.Character, ECollisionEnabled::NoCollision);
+		CurrentFrames.Add(CurrentFrame);
+	}
+
+	// Headshots section.
+	
+	// This should be fast if Head is the first item in the array.
+	auto FindHeadCapsuleByBoneName = [](const TArray<UCapsuleComponent*>& CollisionCapsules, const FName& HeadBoneName) -> UCapsuleComponent*
+	{
+		for (UCapsuleComponent* Capsule : CollisionCapsules)
+		{
+			if (Capsule && Capsule->GetFName() == HeadBoneName)
+			{
+				return Capsule;
+			}
+		}
+		return nullptr;
+	};
+	
+	for (const auto& Frame : FramePackages)
+	{
+		// Enable collision for the head first (find head capsule by bone name).
+		UCapsuleComponent* HeadCapsule = FindHeadCapsuleByBoneName(Frame.Character->HitCollisionCapsules, HeadBoneName);
+		if (!HeadCapsule) continue;
+		
+		HeadCapsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		HeadCapsule->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECR_Block);
+	}
+	
+	const auto& World = GetWorld();
+	// Check for headshots.
+
+	auto CheckShots = [TraceStart, &HitLocations](const UWorld* World, TMap<AActor*, uint32>& ShotMap)
+	{
+		for (const FVector_NetQuantize& HitLocation : HitLocations)
+		{
+			FHitResult ConfirmHitResult;
+			const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f;
+			if (!World)
+				return;
+			World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
+			
+			if (auto HitActor = ConfirmHitResult.GetActor())
+			{
+				if (ShotMap.Contains(HitActor))
+				{
+					ShotMap[HitActor]++;
+				}
+				else
+				{
+					ShotMap.Emplace(HitActor, 1);
+				}
+			}
+		}
+	};
+	
+	CheckShots(World, ShotgunResult.HeadShots);
+	
+	/*
+	for (auto& HitLocation : HitLocations)
+	{
+		FHitResult ConfirmHitResult;
+		const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f;
+		if (World)
+		{
+			World->LineTraceSingleByChannel(
+				ConfirmHitResult,
+				TraceStart,
+				TraceEnd,
+				ECollisionChannel::ECC_Visibility
+			);
+			ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(ConfirmHitResult.GetActor());
+			if (BlasterCharacter)
+			{
+				if (ShotgunResult.HeadShots.Contains(BlasterCharacter))
+				{
+					ShotgunResult.HeadShots[BlasterCharacter]++;
+				}
+				else
+				{
+					ShotgunResult.HeadShots.Emplace(BlasterCharacter, 1);
+				}
+			}
+		}
+	}
+	*/
+
+	// enable collision for all capsule, then disable for head capsule.
+	for (const auto& Frame : FramePackages)
+	{
+		for (auto& HitCollisionCapsule : Frame.Character->HitCollisionCapsules)
+		{
+			if (HitCollisionCapsule)
+			{
+				HitCollisionCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+				HitCollisionCapsule->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+			}
+		}
+		
+		if (UCapsuleComponent* HeadCapsule = FindHeadCapsuleByBoneName(Frame.Character->HitCollisionCapsules, HeadBoneName) ; HeadCapsule)
+		{
+			HeadCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+	}
+
+	// check for body shots
+	
+	CheckShots(World, ShotgunResult.BodyShots);
+	/*
+	for (auto& HitLocation : HitLocations)
+	{
+		FHitResult ConfirmHitResult;
+		const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f;
+		if (World)
+		{
+			World->LineTraceSingleByChannel(
+				ConfirmHitResult,
+				TraceStart,
+				TraceEnd,
+				ECollisionChannel::ECC_Visibility
+			);
+			ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(ConfirmHitResult.GetActor());
+			if (BlasterCharacter)
+			{
+				if (ShotgunResult.BodyShots.Contains(BlasterCharacter))
+				{
+					ShotgunResult.BodyShots[BlasterCharacter]++;
+				}
+				else
+				{
+					ShotgunResult.BodyShots.Emplace(BlasterCharacter, 1);
+				}
+			}
+		}
+	}
+	*/
+
+	for (const auto& Frame : CurrentFrames)
+	{
+		ResetHitCapsules(Frame.Character, Frame);
+		EnableCharacterMeshCollision(Frame.Character, ECollisionEnabled::QueryAndPhysics);
+	}
+
+	return ShotgunResult;
 }
 
 void ULagCompensationComponent::ShowFramePackage(const FFramePackage& Package, const FColor& Color) const
