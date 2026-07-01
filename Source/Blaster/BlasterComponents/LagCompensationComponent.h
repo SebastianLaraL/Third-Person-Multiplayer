@@ -87,6 +87,9 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 	void ServerScoreRequest(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, const float HitTime, AWeapon* DamageCauser);
+	
+	UFUNCTION(Server, Reliable)
+	void ShotgunServerScoreRequest(const TArray<ABlasterCharacter*>& HitCharacters, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime);
 protected:
 	void SaveFramePackage();
 	void SaveFramePackage(FFramePackage& Package);
@@ -101,11 +104,11 @@ protected:
 	//
 	// Shotgun
 	//
-	FShotgunServerSideRewindResult ShotgunServerSideRewindResult(const TArray<ABlasterCharacter*>& HitActors, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const;
+	FShotgunServerSideRewindResult ShotgunServerSideRewind(const TArray<ABlasterCharacter*>& HitActors, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const;
 	FShotgunServerSideRewindResult ShotgunConfirmHit(const TArray<FFramePackage>& FramePackages, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations) const;
 private:
 	UPROPERTY()
-	TObjectPtr<ABlasterCharacter> BlasterCharacter;
+	TObjectPtr<ABlasterCharacter> OwnerCharacter;
 	
 	UPROPERTY()
 	TObjectPtr<ABlasterPlayerController> BlasterPlayerController;

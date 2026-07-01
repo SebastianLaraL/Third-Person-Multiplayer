@@ -23,7 +23,7 @@ void ULagCompensationComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
 	
-	BlasterCharacter = Cast<ABlasterCharacter>(GetOwner());
+	OwnerCharacter = Cast<ABlasterCharacter>(GetOwner());
 }
 
 
@@ -31,9 +31,9 @@ void ULagCompensationComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (BlasterCharacter)
+	if (OwnerCharacter)
 	{
-		BlasterPlayerController = Cast<ABlasterPlayerController>(BlasterCharacter->GetController());
+		BlasterPlayerController = Cast<ABlasterPlayerController>(OwnerCharacter->GetController());
 	}
 }
 
@@ -58,15 +58,39 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharac
 {
 	const FServerSideRewindResult Confirm = ServerSideRewind(HitCharacter, TraceStart, HitLocation, HitTime);
 	
-	if (BlasterCharacter && HitCharacter && DamageCauser && Confirm.bHitConfirmed)
+	if (OwnerCharacter && HitCharacter && DamageCauser && Confirm.bHitConfirmed)
 	{
-		UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(), BlasterCharacter->Controller, DamageCauser, UDamageType::StaticClass());
+		UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(), OwnerCharacter->Controller, DamageCauser, UDamageType::StaticClass());
+	}
+}
+
+void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const TArray<ABlasterCharacter*>& HitCharacters,
+	const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime)
+{
+	FShotgunServerSideRewindResult Confirm = ShotgunServerSideRewind(HitCharacters, TraceStart, HitLocations, HitTime);
+	
+	for (const auto& HitCharacter : HitCharacters)
+	{
+		if (!HitCharacter || !HitCharacter->GetEquippedWeapon() || !OwnerCharacter) continue;
+		float TotalDamage = 0.f;
+		if (Confirm.HeadShots.Contains(HitCharacter))
+		{
+			const float HeadshotDamage = Confirm.HeadShots[HitCharacter] * OwnerCharacter->GetEquippedWeapon()->GetDamage();
+			TotalDamage += HeadshotDamage;
+		}
+		if (Confirm.BodyShots.Contains(HitCharacter))
+		{
+			const float BodyShotDamage = Confirm.BodyShots[HitCharacter] * OwnerCharacter->GetEquippedWeapon()->GetDamage();
+			TotalDamage += BodyShotDamage;
+		}
+		
+		UGameplayStatics::ApplyDamage(HitCharacter, TotalDamage, OwnerCharacter->Controller, HitCharacter->GetEquippedWeapon(), UDamageType::StaticClass());
 	}
 }
 
 void ULagCompensationComponent::SaveFramePackage()
 {
-	if (!BlasterCharacter || !BlasterCharacter->HasAuthority()) return;
+	if (!OwnerCharacter || !OwnerCharacter->HasAuthority()) return;
 	
 	FFramePackage ThisFramePackage;
 	
@@ -92,12 +116,12 @@ void ULagCompensationComponent::SaveFramePackage()
 
 void ULagCompensationComponent::SaveFramePackage(FFramePackage& Package)
 {
-	BlasterCharacter = BlasterCharacter ? BlasterCharacter.Get() : Cast<ABlasterCharacter>(GetOwner());
-	if (!BlasterCharacter) return;
+	OwnerCharacter = OwnerCharacter ? OwnerCharacter.Get() : Cast<ABlasterCharacter>(GetOwner());
+	if (!OwnerCharacter) return;
 	
 	Package.Time = GetWorld()->GetTimeSeconds();
-	Package.Character = BlasterCharacter;
-	for (const auto& Capsule : BlasterCharacter->HitCollisionCapsules)
+	Package.Character = OwnerCharacter;
+	for (const auto& Capsule : OwnerCharacter->HitCollisionCapsules)
 	{
 		FCapsuleInformation CapsuleInformation;
 		CapsuleInformation.Location = Capsule->GetComponentLocation();
@@ -334,7 +358,7 @@ void ULagCompensationComponent::EnableCharacterMeshCollision(const ABlasterChara
 	}
 }
 
-FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewindResult(const TArray<ABlasterCharacter*>& HitActors,
+FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunServerSideRewind(const TArray<ABlasterCharacter*>& HitActors,
 	const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, const float HitTime) const
 {
 	if (HitActors.IsEmpty()) return {};
