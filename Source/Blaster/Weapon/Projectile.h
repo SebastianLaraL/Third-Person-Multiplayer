@@ -51,6 +51,9 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	float InitialSpeed = 15000.f;
+	
+	UPROPERTY(EditDefaultsOnly, meta = (ClampMin = 0.000001))
+	float Damage = 1.f;
 
 protected:
 	virtual void BeginPlay() override;
@@ -65,9 +68,6 @@ protected:
 	
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastImpactEffects(UPhysicalMaterial* HitMaterial);
-	
-	UPROPERTY(EditDefaultsOnly, meta = (ClampMin = 0.000001))
-	float Damage = 1.f; // TODO: Wouldn't it be better to implement this in an interface?
 	
 	// The particle to spawn on a hit.
 	UPROPERTY(VisibleAnywhere, Category=ImpactEffects)
