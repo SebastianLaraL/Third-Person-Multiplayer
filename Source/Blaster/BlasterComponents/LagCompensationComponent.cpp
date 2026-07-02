@@ -7,6 +7,7 @@
 #include "Blaster/PlayerController/BlasterPlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Blaster/Blaster.h"
 #include "Blaster/Utils/DebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blaster/Weapon/Weapon.h"
@@ -227,7 +228,7 @@ FFramePackage ULagCompensationComponent::GetFrameToCheck(ABlasterCharacter* HitC
 }
 
 FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackage& Package,
-                                                              ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation)
+                                                              ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation) const
 {
 	if (!HitCharacter) return FServerSideRewindResult{};
 
@@ -250,7 +251,7 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 
 	// Enable collision for the head first
 	HeadCapsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	HeadCapsule->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	HeadCapsule->SetCollisionResponseToChannel(ECC_HitCapsule, ECollisionResponse::ECR_Block);
 
 	const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f; // Increase range by 25%.
 	if (const UWorld* World = GetWorld())
@@ -261,13 +262,20 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 			ConfirmHitResult,
 			TraceStart,
 			TraceEnd,
-			ECollisionChannel::ECC_Visibility
+			ECC_HitCapsule
 		);
 
 		if (ConfirmHitResult.bBlockingHit) // we hit the head, return early
 		{
 			ResetHitCapsules(HitCharacter, CurrentFrame);
 			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryOnly);
+			if (ConfirmHitResult.Component.IsValid())
+			{
+				if (const UCapsuleComponent* HitCapsule = Cast<UCapsuleComponent>(ConfirmHitResult.Component))
+				{
+					DRAW_DEBUG_CAPSULE(World, HitCapsule->GetComponentLocation(), HitCapsule->GetScaledCapsuleHalfHeight(), HitCapsule->GetScaledCapsuleRadius(), FQuat(HitCapsule->GetComponentRotation()), FColor::Red, false, 8.f, -1, 0, 0);
+				}
+			}
 			return FServerSideRewindResult{ true, true };
 		}
 		
@@ -278,20 +286,27 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 			if (HitBoxPair)
 			{
 				HitBoxPair->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-				HitBoxPair->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+				HitBoxPair->SetCollisionResponseToChannel(ECC_HitCapsule, ECollisionResponse::ECR_Block);
 			}
 		}
 		World->LineTraceSingleByChannel(
 			ConfirmHitResult,
 			TraceStart,
 			TraceEnd,
-			ECollisionChannel::ECC_Visibility
+			ECC_HitCapsule
 		);
 
 		if (ConfirmHitResult.bBlockingHit)
 		{
 			ResetHitCapsules(HitCharacter, CurrentFrame);
 			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryOnly);
+			if (ConfirmHitResult.Component.IsValid())
+			{
+				if (const UCapsuleComponent* HitCapsule = Cast<UCapsuleComponent>(ConfirmHitResult.Component))
+				{
+					DRAW_DEBUG_CAPSULE(World, HitCapsule->GetComponentLocation(), HitCapsule->GetScaledCapsuleHalfHeight(), HitCapsule->GetScaledCapsuleRadius(), FQuat(HitCapsule->GetComponentRotation()), FColor::Blue, false, 8.f, -1, 0, 0);
+				}
+			}
 			return FServerSideRewindResult{ true, false };
 		}
 	}
@@ -414,13 +429,13 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 		if (!HeadCapsule) continue;
 		
 		HeadCapsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		HeadCapsule->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECR_Block);
+		HeadCapsule->SetCollisionResponseToChannel(ECC_HitCapsule, ECR_Block);
 	}
 	
 	const auto& World = GetWorld();
 	// Check for headshots.
 
-	auto CheckShots = [TraceStart, &HitLocations](const UWorld* World, TMap<AActor*, uint32>& ShotMap)
+	auto CheckShots = [TraceStart, &HitLocations](const UWorld* World, TMap<AActor*, uint32>& ShotMap, const FColor& DebugColor)
 	{
 		for (const FVector_NetQuantize& HitLocation : HitLocations)
 		{
@@ -428,7 +443,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 			const FVector TraceEnd = TraceStart + (HitLocation - TraceStart) * 1.25f;
 			if (!World)
 				return;
-			World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
+			World->LineTraceSingleByChannel(ConfirmHitResult, TraceStart, TraceEnd, ECC_HitCapsule);
 			
 			if (auto HitActor = ConfirmHitResult.GetActor())
 			{
@@ -440,11 +455,18 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 				{
 					ShotMap.Emplace(HitActor, 1);
 				}
+				if (ConfirmHitResult.Component.IsValid())
+				{
+					if (const UCapsuleComponent* HitCapsule = Cast<UCapsuleComponent>(ConfirmHitResult.Component))
+					{
+						DRAW_DEBUG_CAPSULE(World, HitCapsule->GetComponentLocation(), HitCapsule->GetScaledCapsuleHalfHeight(), HitCapsule->GetScaledCapsuleRadius(), FQuat(HitCapsule->GetComponentRotation()), DebugColor, false, 8.f, -1, 0, 0);
+					}
+				}
 			}
 		}
 	};
 	
-	CheckShots(World, ShotgunResult.HeadShots);
+	CheckShots(World, ShotgunResult.HeadShots, FColor::Red);
 	
 	/*
 	for (auto& HitLocation : HitLocations)
@@ -457,7 +479,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 				ConfirmHitResult,
 				TraceStart,
 				TraceEnd,
-				ECollisionChannel::ECC_Visibility
+				ECC_HitCapsule
 			);
 			ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(ConfirmHitResult.GetActor());
 			if (BlasterCharacter)
@@ -483,7 +505,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 			if (HitCollisionCapsule)
 			{
 				HitCollisionCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-				HitCollisionCapsule->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+				HitCollisionCapsule->SetCollisionResponseToChannel(ECC_HitCapsule, ECollisionResponse::ECR_Block);
 			}
 		}
 		
@@ -495,7 +517,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 
 	// check for body shots
 	
-	CheckShots(World, ShotgunResult.BodyShots);
+	CheckShots(World, ShotgunResult.BodyShots, FColor::Blue);
 	/*
 	for (auto& HitLocation : HitLocations)
 	{
@@ -507,7 +529,7 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 				ConfirmHitResult,
 				TraceStart,
 				TraceEnd,
-				ECollisionChannel::ECC_Visibility
+				ECC_HitCapsule
 			);
 			ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(ConfirmHitResult.GetActor());
 			if (BlasterCharacter)

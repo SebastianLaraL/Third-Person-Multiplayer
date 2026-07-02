@@ -95,7 +95,7 @@ protected:
 	void SaveFramePackage(FFramePackage& Package);
 	FFramePackage InterpBetweenFrames(const FFramePackage& OlderFrame, const FFramePackage& YoungerFrame, const float HitTime) const;
 	FFramePackage GetFrameToCheck(ABlasterCharacter* HitCharacter, const float HitTime) const;
-	FServerSideRewindResult ConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation);
+	FServerSideRewindResult ConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation) const;
 	void CacheCapsulePositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage) const;
 	void MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package) const;
 	void ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package) const;
