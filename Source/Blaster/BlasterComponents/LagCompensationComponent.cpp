@@ -60,6 +60,18 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileServerSideRewind(AB
 	return ProjectileConfirmHit(FrameToCheck, HitCharacter, TraceStart, InitialVelocity, HitTime);
 }
 
+void ULagCompensationComponent::ServerProjectileScoreRequest_Implementation(ABlasterCharacter* HitCharacter,
+	const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& InitialVelocity, const float HitTime)
+{
+	const FServerSideRewindResult Confirm = ProjectileServerSideRewind(HitCharacter, TraceStart, InitialVelocity, HitTime);
+	
+	if (OwnerCharacter && HitCharacter && Confirm.bHitConfirmed)
+	{
+		UGameplayStatics::ApplyDamage(HitCharacter, OwnerCharacter->GetEquippedWeapon()->GetDamage(),
+			OwnerCharacter->Controller, OwnerCharacter->GetEquippedWeapon(), UDamageType::StaticClass());
+	}
+}
+
 void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlasterCharacter* HitCharacter,
                                                                   const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, const float HitTime,
                                                                   AWeapon* DamageCauser)

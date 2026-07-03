@@ -72,12 +72,12 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 			}
 		}
 	}
-	else // No SSR, only server spawns and replicates as usual.
+	else // SSR, only server spawns and replicates as usual.
 	{
 		if (InstigatorPawn->HasAuthority())
 		{
 			SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
-			SpawnedProjectile->bUseServerSideRewind = false;
+			SpawnedProjectile->bUseServerSideRewind = true;
 			SpawnedProjectile->Damage = Damage;
 		}
 	}
