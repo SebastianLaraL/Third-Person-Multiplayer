@@ -141,11 +141,11 @@ protected:
 	void ShowAttachedGrenade(const bool bShowGrenade) const;
 	
 private:
-//	UPROPERTY()
+	UPROPERTY()
 	TObjectPtr<ABlasterCharacter> Character;
-//	UPROPERTY()
+	UPROPERTY()
 	TObjectPtr<ABlasterPlayerController> Controller;
-//	UPROPERTY()
+	UPROPERTY()
 	TObjectPtr<ABlasterHUD> HUD;
 
 	// Hand Socket Name.
