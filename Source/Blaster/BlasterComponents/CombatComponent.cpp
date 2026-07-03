@@ -3,7 +3,6 @@
 
 #include "CombatComponent.h"
 
-#include <filesystem>
 
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Blaster/PlayerController/BlasterPlayerController.h"
@@ -246,7 +245,7 @@ void UCombatComponent::FireWeapon()
 	{
 		HitTarget = EquippedWeapon->bUseScatter ? EquippedWeapon->TraceEndWithScatter(HitTarget) : HitTarget;
 		if (!Character->HasAuthority()) LocalFire(HitTarget);
-		ServerFire(HitTarget);
+		ServerFire(HitTarget, EquippedWeapon->FireDelay);
 	}
 }
 
@@ -259,7 +258,7 @@ void UCombatComponent::FireShotgun()
 		// TODO: could optimize a bit calling HitTargets.Reserve(NumberOfPellets).
 		HitScanWeapon->ShotgunTraceEndWithScatter(HitTarget, HitTargets);
 		if (!Character->HasAuthority()) ShotgunLocalFire(HitTargets);
-		ServerShotgunFire(HitTargets);
+		ServerShotgunFire(HitTargets, EquippedWeapon->FireDelay);
 	}
 }
 
@@ -320,9 +319,16 @@ void UCombatComponent::FireTimerFinished()
 }
 
 
-void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget, const float FireDelay)
 {
 	MulticastFire(TraceHitTarget);
+}
+
+// Validate Fire Delay. Kick the player if it is not.
+bool UCombatComponent::ServerFire_Validate(const FVector_NetQuantize& TraceHitTarget, const float FireDelay)
+{
+	if (!EquippedWeapon) return true;
+	return FMath::IsNearlyEqual(EquippedWeapon->FireDelay, FireDelay, 0.001f);
 }
 
 void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
@@ -331,11 +337,16 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 	LocalFire(TraceHitTarget);
 }
 
-void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets)
+void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets, const float FireDelay)
 {
 	MulticastShotgunFire(TraceHitTargets);
 }
 
+bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuantize>& TraceHitTargets, const float FireDelay)
+{
+	if (!EquippedWeapon) return true;
+	return FMath::IsNearlyEqual(EquippedWeapon->FireDelay, FireDelay, 0.001f);
+}
 
 void UCombatComponent::MulticastShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets)
 {
