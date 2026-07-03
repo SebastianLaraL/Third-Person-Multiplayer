@@ -83,7 +83,16 @@ public:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void ShowFramePackage(const FFramePackage& Package, const FColor& Color = FColor::Orange) const;
+	
+	//
+	// Hitscan.
+	//
 	FServerSideRewindResult ServerSideRewind(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, const float HitTime);
+	
+	//
+	// Projectile.
+	//
+	FServerSideRewindResult ProjectileServerSideRewind(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& InitialVelocity, const float HitTime) const;
 	
 	UFUNCTION(Server, Reliable)
 	void ServerScoreRequest(ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, const float HitTime, AWeapon* DamageCauser);
@@ -95,7 +104,10 @@ protected:
 	void SaveFramePackage(FFramePackage& Package);
 	FFramePackage InterpBetweenFrames(const FFramePackage& OlderFrame, const FFramePackage& YoungerFrame, const float HitTime) const;
 	FFramePackage GetFrameToCheck(ABlasterCharacter* HitCharacter, const float HitTime) const;
+	// Hit scan.
 	FServerSideRewindResult ConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation) const;
+	// Projectile.
+	FServerSideRewindResult ProjectileConfirmHit(const FFramePackage& Package, ABlasterCharacter* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& InitialVelocity, const float HitTime) const;
 	void CacheCapsulePositions(ABlasterCharacter* HitCharacter, FFramePackage& OutFramePackage) const;
 	void MoveCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package) const;
 	void ResetHitCapsules(ABlasterCharacter* HitCharacter, const FFramePackage& Package) const;

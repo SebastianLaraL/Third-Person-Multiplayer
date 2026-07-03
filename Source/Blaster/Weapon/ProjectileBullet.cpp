@@ -9,6 +9,8 @@ void AProjectileBullet::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	/*
+	 * Projectile prediction introduction (learning). You can remove this later if you do not need it.
 	FPredictProjectilePathParams PathParams;
 	PathParams.bTraceWithChannel = true;
 	PathParams.bTraceWithCollision = true;
@@ -24,6 +26,7 @@ void AProjectileBullet::BeginPlay()
 	
 	FPredictProjectilePathResult PathResult;
 	UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
+	*/
 }
 
 void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
