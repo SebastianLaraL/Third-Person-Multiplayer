@@ -72,9 +72,9 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	for (const auto& HitPair : HitMap)
 	{
 		ABlasterCharacter* HitBlasterCharacter = HitPair.Key;
-		if (!HitBlasterCharacter || !InstigatorController || !OwnerPawn->IsLocallyControlled()) continue;
-		
-		if (HasAuthority())
+		if (!HitBlasterCharacter || !InstigatorController) continue;
+		const bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
+		if (HasAuthority() && bCauseAuthDamage)
 		{
 			UGameplayStatics::ApplyDamage(HitPair.Key,
 				Damage * HitPair.Value, // Number of pellets that hit multiplied by damage.
@@ -154,7 +154,8 @@ void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 	{
 		if (HitPair.Key && InstigatorController)
 		{
-			if (HasAuthority() && OwnerPawn->IsLocallyControlled())
+			const bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
+			if (HasAuthority() && bCauseAuthDamage)
 			{
 				UGameplayStatics::ApplyDamage(
 					HitPair.Key, // Character that was hit
@@ -170,10 +171,10 @@ void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 			}
 		}
 	}
-	if (!HasAuthority() && bUseServerSideRewind && OwnerPawn->IsLocallyControlled())
+	if (!HasAuthority() && bUseServerSideRewind)
 	{
 		if (!BlasterOwnerCharacter || ! BlasterOwnerController) return; // I could make checks for both of these but nah.
-		if (BlasterOwnerCharacter->GetLagCompensationComponent())
+		if (BlasterOwnerCharacter->GetLagCompensationComponent() && BlasterOwnerCharacter->IsLocallyControlled())
 		{
 			BlasterOwnerCharacter->GetLagCompensationComponent()->ShotgunServerScoreRequest(
 				HitCharacters, Start, HitTargets,
