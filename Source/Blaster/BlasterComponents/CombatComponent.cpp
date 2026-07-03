@@ -747,9 +747,13 @@ void UCombatComponent::FinishReloading()
 
 void UCombatComponent::FinishSwap()
 {
-	if (Character && Character->HasAuthority())
+	if (Character)
 	{
-		CombatState = ECombatState::ECS_Unoccupied;
+		Character->bFinishedSwapping = true;
+		if (Character->HasAuthority())
+		{
+			CombatState = ECombatState::ECS_Unoccupied;
+		}
 	}
 }
 

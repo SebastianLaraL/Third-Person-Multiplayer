@@ -383,11 +383,13 @@ void ABlasterCharacter::SwapButtonTriggered(const FInputActionValue& Value)
 	if (Value.Get<float>() != 0.f && CombatComponent && CombatComponent->CanSwapWeapons())
 	{
 		ServerSwapWeaponTriggered();
-		if (!HasAuthority() && CombatComponent->CombatState == ECombatState::ECS_Unoccupied /* && !OverlappingWeapon*/)
+		if (!HasAuthority() && CombatComponent->CombatState == ECombatState::ECS_Unoccupied)
 		{
 			PlaySwapMontage();
 			CombatComponent->CombatState = ECombatState::ECS_SwappingWeapons;
+			// bFinishedSwapping = false;
 		}
+		bFinishedSwapping = false;
 	}
 }
 

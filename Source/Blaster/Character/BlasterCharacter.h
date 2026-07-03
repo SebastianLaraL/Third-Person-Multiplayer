@@ -69,6 +69,8 @@ public:
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
 	
+	bool bFinishedSwapping = false; // Cosmetic.
+	
 	void PlayElimMontage() const;
 	void PlayThrowGrenadeMontage() const;
 	
