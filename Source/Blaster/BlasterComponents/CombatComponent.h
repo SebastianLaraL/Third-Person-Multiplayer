@@ -47,6 +47,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void FinishReloading();
 	
+	UFUNCTION(BlueprintCallable)
+	void FinishSwap();
+	
+	UFUNCTION(BlueprintCallable)
+	void FinishSwapAttachWeapons();
+	
 	// Jump to the shotgun end anim montage section. Explicit jump section is "ShotgunEnd" (hardcoded).
 	void JumpToShotgunEnd();
 	

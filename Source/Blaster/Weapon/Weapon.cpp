@@ -14,9 +14,17 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Particles/ParticleSystem.h"
 #include "Sound/SoundCue.h"
 #include "Blaster/Utils/DebugHelpers.h"
+
+//
+// TODO: implement some way that when ping is TOO high, disable server side rewind.
+// Maybe I could use something like this: 
+// if(GetOwner()->GetInstigatorController()->PlayerState->GetPingInMilliseconds() > SomeThreshold)
+// { bUseServerSideRewind = false;
+// }
+// Maybe this will need bUseServerSideRewind to be replicated.
+//
 
 AWeapon::AWeapon()
 {

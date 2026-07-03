@@ -242,6 +242,11 @@ void ABlasterCharacter::PlayReloadMontage() const
 	}
 }
 
+void ABlasterCharacter::PlaySwapMontage() const
+{
+	PlayMontage(SwapWeaponMontage);
+}
+
 void ABlasterCharacter::PlayElimMontage() const
 {
 	/*
@@ -376,7 +381,14 @@ void ABlasterCharacter::SwapButtonTriggered(const FInputActionValue& Value)
 	if (bDisableGameplay) return;
 	
 	if (Value.Get<float>() != 0.f && CombatComponent && CombatComponent->CanSwapWeapons())
-	ServerSwapWeaponTriggered();
+	{
+		ServerSwapWeaponTriggered();
+		if (!HasAuthority() && CombatComponent->CombatState == ECombatState::ECS_Unoccupied /* && !OverlappingWeapon*/)
+		{
+			PlaySwapMontage();
+			CombatComponent->CombatState = ECombatState::ECS_SwappingWeapons;
+		}
+	}
 }
 
 void ABlasterCharacter::AimStarted()

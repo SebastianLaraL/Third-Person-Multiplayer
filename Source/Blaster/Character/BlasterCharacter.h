@@ -45,8 +45,11 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
 	virtual void Jump() override;
+	
+	// PlayMontages.
 	void PlayFireMontage(bool bAiming);
 	void PlayReloadMontage() const;
+	void PlaySwapMontage() const;
 	
 	virtual void OnRep_ReplicatedMovement() override;
 
@@ -194,6 +197,9 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = Combat)
 	TObjectPtr<UAnimMontage> ThrowGrenadeMontage;
+	
+	UPROPERTY(EditAnywhere, Category = Combat)
+	TObjectPtr<UAnimMontage> SwapWeaponMontage;
 	
 	void HideCharacterIfCameraClose() const;
 	

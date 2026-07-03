@@ -115,7 +115,9 @@ void UBlasterAnimInstance::NativeUpdateAnimation(const float DeltaSeconds)
 	bIsDead = BlasterCharacter ? BlasterCharacter->GetHealthComponent()->IsDead() : false;
 	// Only use FABRIK (adjusting left hand algorithm) when character is not reloading.
 	bUseFabrik = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied;
-	if (BlasterCharacter->IsLocallyControlled() && BlasterCharacter->GetCombatState() != ECombatState::ECS_ThrowingGrenade)
+	const bool bFABRIKOverride = BlasterCharacter->IsLocallyControlled() && BlasterCharacter->GetCombatState() !=
+		ECombatState::ECS_ThrowingGrenade && BlasterCharacter->GetCombatState() != ECombatState::ECS_SwappingWeapons; 
+	if (bFABRIKOverride)
 	{
 		bUseFabrik = !BlasterCharacter->IsLocallyReloading();
 	}
