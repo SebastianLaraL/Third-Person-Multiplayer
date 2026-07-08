@@ -478,7 +478,8 @@ void ABlasterPlayerController::ReturnToMainMenu()
 	}
 	else
 	{
-		ClientTravel(StoredMenuPath, TRAVEL_Absolute);
+		//ClientTravel(StoredMenuPath, TRAVEL_Absolute);
+		ClientReturnToMainMenuWithTextReason(FText::FromString(TEXT("Client abandoned the match voluntarily.")));
 	}
 }
 
