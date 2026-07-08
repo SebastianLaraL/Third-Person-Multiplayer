@@ -22,6 +22,7 @@ public:
 	ABlasterGameState();
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void UpdateTopScore(ABlasterPlayerState* const ScoringPlayer);
+	void RemoveLeavingPlayer(ABlasterPlayerState* LeavingPlayer);
 	
 	UPROPERTY(Replicated)
 	TArray<TObjectPtr<ABlasterPlayerState>> TopScoringPlayers;	

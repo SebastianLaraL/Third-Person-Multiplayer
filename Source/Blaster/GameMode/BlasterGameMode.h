@@ -27,6 +27,7 @@ public:
 	ABlasterGameMode();
 	virtual void PlayerEliminated(ABlasterCharacter* ElimmedCharacter, ABlasterPlayerController* VictimController, ABlasterPlayerController* AttackerController) const;
 	virtual void RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController);
+	virtual void Logout(AController* Exiting) override;
 	
 	// How long the player will control an invisible
 	// flying pawn before match begins.

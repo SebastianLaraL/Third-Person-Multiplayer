@@ -149,3 +149,13 @@ void ABlasterGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController*
 		RestartPlayerAtPlayerStart(ElimmedController, PlayerStarts[SelectionIndex]);
 	}
 }
+
+void ABlasterGameMode::Logout(AController* Exiting)
+{
+	if (const auto BlasterGameState = GetGameState<ABlasterGameState>())
+	{
+		BlasterGameState->RemoveLeavingPlayer(Cast<ABlasterPlayerState>(Exiting->PlayerState));
+	}
+	
+	Super::Logout(Exiting);
+}

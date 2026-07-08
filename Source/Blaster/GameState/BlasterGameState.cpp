@@ -37,3 +37,12 @@ void ABlasterGameState::UpdateTopScore(ABlasterPlayerState* const ScoringPlayer)
 		TopScore = ScoringPlayer->GetScore();
 	}
 }
+
+void ABlasterGameState::RemoveLeavingPlayer(ABlasterPlayerState* LeavingPlayer) 
+{
+	if (!LeavingPlayer) return;
+	if (TopScoringPlayers.Contains(LeavingPlayer))
+	{
+		TopScoringPlayers.Remove(LeavingPlayer);
+	}
+}

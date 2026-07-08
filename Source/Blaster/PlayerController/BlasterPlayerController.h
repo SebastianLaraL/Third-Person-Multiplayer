@@ -105,7 +105,8 @@ protected:
 	/* Different options to display: No winner, You are the winner, Sole winner, Top winners of the match. */
 	virtual void DisplayWinner() const;
 	
-	void CheckPing(const float DeltaTime);
+	UFUNCTION(Server, Reliable)
+	void ServerNotifyPlayerLeaving();
 	
 private:
 	// UPROPERTY()

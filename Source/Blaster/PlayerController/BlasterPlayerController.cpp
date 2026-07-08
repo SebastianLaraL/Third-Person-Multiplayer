@@ -461,11 +461,13 @@ void ABlasterPlayerController::ReturnToMainMenu()
 {
 	if (MainMenuLevel.IsNull()) return;
 
-	auto GameInstance = GetGameInstance();
+	const auto GameInstance = GetGameInstance();
 	if (!GameInstance) return;
 
 	StoredMenuPath = MainMenuLevel.ToSoftObjectPath().GetLongPackageName();
-
+	
+	ServerNotifyPlayerLeaving();
+	
 	if (HasAuthority())
 	// Please remember blaster project uses a listen-server approach when hosting, so this will be called from a ListenServer (player), not from a dedicated server. 
 	{
@@ -511,6 +513,16 @@ void ABlasterPlayerController::QuitGame()
 	}
 
 	UKismetSystemLibrary::QuitGame(GetWorld(), this, EQuitPreference::Quit, false);
+}
+
+void ABlasterPlayerController::ServerNotifyPlayerLeaving_Implementation()
+{
+	ABlasterGameState* BlasterGameState = GetWorld()->GetGameState<ABlasterGameState>();
+	if (BlasterGameState)
+	{
+		if (ABlasterPlayerState* BlasterPlayerState = GetPlayerState<ABlasterPlayerState>())
+			BlasterGameState->RemoveLeavingPlayer(BlasterPlayerState);
+	}
 }
 
 void ABlasterPlayerController::OnRep_MatchState()
