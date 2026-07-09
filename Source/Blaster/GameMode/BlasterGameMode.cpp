@@ -116,8 +116,33 @@ void ABlasterGameMode::PlayerEliminated(ABlasterCharacter* ElimmedCharacter, ABl
 	// Make sure Attacker is not the victim. Add score then.
 	if (AttackerPlayerState && AttackerPlayerState != VictimPlayerState && BlasterGameState)
 	{
+		TArray<ABlasterPlayerState*> PlayersCurrentlyInTheLead;
+		for (const auto& LeadPlayer : BlasterGameState->TopScoringPlayers)
+		{
+			PlayersCurrentlyInTheLead.Add(LeadPlayer);
+		}
+		
 		AttackerPlayerState->AddToScore(1.f);
 		BlasterGameState->UpdateTopScore(AttackerPlayerState);
+		
+		if (BlasterGameState->TopScoringPlayers.Contains(AttackerPlayerState))
+		{
+			if (ABlasterCharacter* Leader = Cast<ABlasterCharacter>(AttackerPlayerState->GetPawn()))
+			{
+				Leader->MulticastGainedTheLead();
+			}
+		}
+		
+		for (int32 Index = 0; Index < PlayersCurrentlyInTheLead.Num(); Index++)
+		{
+			if (!BlasterGameState->TopScoringPlayers.Contains(PlayersCurrentlyInTheLead[Index]))
+			{
+				if (ABlasterCharacter* Loser = Cast<ABlasterCharacter>(PlayersCurrentlyInTheLead[Index]->GetPawn()))
+				{
+					Loser->MulticastLostTheLead();
+				}
+			}
+		}
 	}
 	// Add victim defeat.
 	if (VictimPlayerState)

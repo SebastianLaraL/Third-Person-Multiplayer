@@ -23,10 +23,11 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Blaster/BlasterComponents/BuffComponent.h"
 #include "Blaster/BlasterComponents/LagCompensationComponent.h"
+#include "Blaster/GameState/BlasterGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
-
 #include "Blaster/PlayerState/BlasterPlayerState.h"
+
 
 ABlasterCharacter::ABlasterCharacter()
 {
@@ -295,6 +296,39 @@ void ABlasterCharacter::OnRep_ReplicatedMovement()
 	TimeSinceLastMovementReplication = 0.f;
 }
 
+void ABlasterCharacter::MulticastGainedTheLead_Implementation()
+{
+	if (!CrownWidgetComponent)
+	{
+		CrownWidgetComponent = NewObject<UWidgetComponent>(this);
+		CrownWidgetComponent->SetupAttachment(RootComponent);
+		CrownWidgetComponent->SetRelativeLocation(FVector(0.f,0.f,140.f));
+		CrownWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		CrownWidgetComponent->SetDrawAtDesiredSize(false);
+		CrownWidgetComponent->SetDrawSize(FVector2D(64));
+		CrownWidgetComponent->RegisterComponent();
+		CrownWidgetComponent->SetWidgetClass(CrownWidgetClass);
+	}
+	if (CrownWidgetComponent)
+	{
+		CrownWidgetComponent->SetVisibility(!IsLocallyControlled());
+		// Lead player will not see the icon (only other players).
+		/*if (IsLocallyControlled())
+		{
+			CrownWidgetComponent->SetOwnerNoSee(true);
+		}
+		*/
+	}
+}
+
+void ABlasterCharacter::MulticastLostTheLead_Implementation()
+{
+	if (CrownWidgetComponent)
+	{
+		CrownWidgetComponent->SetVisibility(false);
+	}
+}
+
 void ABlasterCharacter::Destroyed()
 {
 	Super::Destroyed();
@@ -555,6 +589,29 @@ void ABlasterCharacter::Jump()
 	else
 	{
 		Super::Jump();
+	}
+}
+
+void ABlasterCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	// I'm not sure if this is the appropriate place to check/display the Crown icon, but BeginPlay was not safe to call GetPlayerState, so I thought about this. TODO: find a better place.
+	const auto BlasterGameState = GetWorld()->GetGameState<ABlasterGameState>();
+	if (BlasterGameState && BlasterGameState->TopScoringPlayers.Contains(GetPlayerState()))
+	{
+		MulticastGainedTheLead();
+	}
+}
+
+void ABlasterCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	const auto BlasterGameState = GetWorld()->GetGameState<ABlasterGameState>();
+	if (BlasterGameState && BlasterGameState->TopScoringPlayers.Contains(GetPlayerState()))
+	{
+		MulticastGainedTheLead();
 	}
 }
 

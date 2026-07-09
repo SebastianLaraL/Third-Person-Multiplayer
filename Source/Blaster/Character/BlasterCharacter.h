@@ -45,6 +45,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
 	virtual void Jump() override;
+	virtual void OnRep_PlayerState() override;
+	virtual void PossessedBy(AController* NewController) override;
 	
 	// PlayMontages.
 	void PlayFireMontage(bool bAiming);
@@ -62,6 +64,12 @@ public:
 	
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastGainedTheLead();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastLostTheLead();
 	
 	virtual void Destroyed() override;
 	
@@ -135,6 +143,13 @@ private:
 	/* Overhead widget. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = HUD, meta = (AllowPrivateAccess = true))
 	TObjectPtr<UWidgetComponent> OverheadWidgetComp;
+	
+	// Crown widget.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = HUD, meta = (AllowPrivateAccess = true))
+	TObjectPtr<UWidgetComponent> CrownWidgetComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = HUD, meta = (AllowPrivateAccess = true))
+	TSubclassOf<UUserWidget> CrownWidgetClass;
 
 	/* Overlapping weapon. */
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
