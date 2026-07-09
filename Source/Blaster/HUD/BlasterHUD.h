@@ -77,7 +77,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Elim)
 	TSubclassOf<UElimAnnouncement> ElimAnnouncementClass;
 	
-	UPROPERTY(EditDefaultsOnly, Category = Elim)
+	// Time to wait before removing elim announcement from screen.
+	UPROPERTY(EditDefaultsOnly, Category = Elim, meta = (ClampMin = 0.1f, ForceUnits = Seconds))
 	float ElimAnnouncementTime = 3.5f;
 	
 	UPROPERTY()
