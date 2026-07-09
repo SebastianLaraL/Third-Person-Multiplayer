@@ -6,6 +6,7 @@
 #include "GameFramework/HUD.h"
 #include "BlasterHUD.generated.h"
 
+class UElimAnnouncement;
 /*
  * A struct with all crosshair positions.
  */
@@ -73,7 +74,11 @@ public:
 	UPROPERTY()
 	TObjectPtr<UPauseMenu> PauseMenu;
 	
+	UPROPERTY(EditDefaultsOnly, Category = Elim)
+	TSubclassOf<UElimAnnouncement> ElimAnnouncementClass;
+	
 	void AddAnnouncement();
+	void AddElimAnnouncement(const FString& Attacker, const FString& Victim) const;
 	void AddSniperScope();
 	
 protected:

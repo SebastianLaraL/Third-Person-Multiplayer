@@ -65,6 +65,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Levels)
 	TSoftObjectPtr<UWorld> MainMenuLevel;
 	
+	// Elimination.
+	void BroadcastElim(APlayerState* Attacker, APlayerState* Victim);
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -107,6 +110,9 @@ protected:
 	
 	UFUNCTION(Server, Reliable)
 	void ServerNotifyPlayerLeaving();
+	
+	UFUNCTION(Client, Reliable)
+	void ClientElimAnnouncement(APlayerState* Attacker, APlayerState* Victim);
 	
 private:
 	// UPROPERTY()

@@ -154,6 +154,15 @@ void ABlasterGameMode::PlayerEliminated(ABlasterCharacter* ElimmedCharacter, ABl
 	{
 		ElimmedCharacter->Elim();
 	}
+	
+	for (auto It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		const auto BlasterPlayerController = Cast<ABlasterPlayerController>(*It);
+		if (BlasterPlayerController && AttackerPlayerState && VictimPlayerState)
+		{
+			BlasterPlayerController->BroadcastElim(AttackerPlayerState, VictimPlayerState);
+		}
+	}
 }
 
 void ABlasterGameMode::RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController)

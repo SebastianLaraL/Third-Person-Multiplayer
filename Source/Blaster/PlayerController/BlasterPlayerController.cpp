@@ -102,6 +102,11 @@ void ABlasterPlayerController::GetLifetimeReplicatedProps(TArray<class FLifetime
 	DOREPLIFETIME(ThisClass, MatchState)
 }
 
+void ABlasterPlayerController::BroadcastElim(APlayerState* Attacker, APlayerState* Victim)
+{
+	ClientElimAnnouncement(Attacker, Victim);
+}
+
 void ABlasterPlayerController::ClientRestart_Implementation(class APawn* NewPawn)
 {
 	Super::ClientRestart_Implementation(NewPawn);
@@ -733,6 +738,39 @@ void ABlasterPlayerController::DisplayWinner() const
 		}
 
 		BlasterHUD->Announcement->InfoText->SetText(FText::FromString(InfoTextString));
+	}
+}
+
+void ABlasterPlayerController::ClientElimAnnouncement_Implementation(APlayerState* Attacker, APlayerState* Victim)
+{
+	const APlayerState* Self = GetPlayerState<APlayerState>();
+	if (!Attacker || !Victim || !Self) return;
+	
+	BlasterHUD = BlasterHUD ? BlasterHUD.Get() : Cast<ABlasterHUD>(GetHUD());
+	
+	if (BlasterHUD)
+	{
+		if (Attacker == Self && Victim != Self)
+		{
+			BlasterHUD->AddElimAnnouncement("You", Victim->GetPlayerName());
+			return;
+		}
+		if (Victim == Self && Attacker != Self)
+		{
+			BlasterHUD->AddElimAnnouncement(Attacker->GetPlayerName(), "you");
+			return;
+		}
+		if (Attacker == Victim && Attacker == Self)
+		{
+			BlasterHUD->AddElimAnnouncement("You", "yourself");
+			return;
+		}
+		if (Attacker == Victim && Attacker != Self)
+		{
+			BlasterHUD->AddElimAnnouncement(Attacker->GetPlayerName(), "themselves");
+			return;
+		}
+		BlasterHUD->AddElimAnnouncement(Attacker->GetPlayerName(), Victim->GetPlayerName());
 	}
 }
 

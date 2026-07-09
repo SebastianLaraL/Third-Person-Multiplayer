@@ -6,6 +6,7 @@
 #include "Announcement.h"
 #include "GameFramework/PlayerController.h"
 #include "CharacterOverlay.h"
+#include "ElimAnnouncement.h"
 #include "SniperScope.h"
 
 void ABlasterHUD::DrawHUD()
@@ -50,6 +51,19 @@ void ABlasterHUD::AddAnnouncement()
 	{
 		Announcement = CreateWidget<UAnnouncement>(PlayerController, AnnouncementClass);
 		Announcement->AddToViewport();
+	}
+}
+
+void ABlasterHUD::AddElimAnnouncement(const FString& Attacker, const FString& Victim) const
+{
+	const auto OwningPC = GetOwningPlayerController();
+	if (OwningPC && ElimAnnouncementClass)
+	{
+		if (UElimAnnouncement* ElimAnnouncementWidget = CreateWidget<UElimAnnouncement>(OwningPC,ElimAnnouncementClass))
+		{
+			ElimAnnouncementWidget->SetElimAnnouncementText(Attacker, Victim);
+			ElimAnnouncementWidget->AddToViewport();
+		}
 	}
 }
 
