@@ -77,8 +77,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Elim)
 	TSubclassOf<UElimAnnouncement> ElimAnnouncementClass;
 	
+	UPROPERTY(EditDefaultsOnly, Category = Elim)
+	float ElimAnnouncementTime = 3.5f;
+	
+	UPROPERTY()
+	TArray<TObjectPtr<UElimAnnouncement>> ElimMessages;
+	
 	void AddAnnouncement();
-	void AddElimAnnouncement(const FString& Attacker, const FString& Victim) const;
+	void AddElimAnnouncement(const FString& Attacker, const FString& Victim);
 	void AddSniperScope();
 	
 protected:

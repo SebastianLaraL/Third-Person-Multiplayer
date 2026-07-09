@@ -8,6 +8,9 @@
 #include "CharacterOverlay.h"
 #include "ElimAnnouncement.h"
 #include "SniperScope.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/HorizontalBox.h"
 
 void ABlasterHUD::DrawHUD()
 {
@@ -54,7 +57,7 @@ void ABlasterHUD::AddAnnouncement()
 	}
 }
 
-void ABlasterHUD::AddElimAnnouncement(const FString& Attacker, const FString& Victim) const
+void ABlasterHUD::AddElimAnnouncement(const FString& Attacker, const FString& Victim)
 {
 	const auto OwningPC = GetOwningPlayerController();
 	if (OwningPC && ElimAnnouncementClass)
@@ -63,6 +66,35 @@ void ABlasterHUD::AddElimAnnouncement(const FString& Attacker, const FString& Vi
 		{
 			ElimAnnouncementWidget->SetElimAnnouncementText(Attacker, Victim);
 			ElimAnnouncementWidget->AddToViewport();
+			
+			// Stack messages (old on the top) using the horizontal box height.
+			for (const UElimAnnouncement* Msg : ElimMessages)
+			{
+				if (!Msg || !Msg->AnnouncementBox) continue;
+				
+				if (UCanvasPanelSlot* CanvasSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(Msg->AnnouncementBox))
+				{
+					const FVector2D Position = CanvasSlot->GetPosition();
+					const FVector2D NewPosition(CanvasSlot->GetPosition().X, Position.Y - CanvasSlot->GetSize().Y);
+					CanvasSlot->SetPosition(NewPosition);
+				}
+			}
+			
+			ElimMessages.Add(ElimAnnouncementWidget);
+			
+			
+			FTimerHandle ElimMsgTimer;
+			const FTimerDelegate ElimMsgDelegate = FTimerDelegate::CreateWeakLambda(this,
+				[this, ElimAnnouncementWidget]()
+				{
+					if (ElimAnnouncementWidget)
+					{
+						ElimMessages.Remove(ElimAnnouncementWidget);
+						ElimAnnouncementWidget->RemoveFromParent();
+					}
+				}
+			);
+			GetWorldTimerManager().SetTimer(ElimMsgTimer, ElimMsgDelegate, ElimAnnouncementTime, false);
 		}
 	}
 }
