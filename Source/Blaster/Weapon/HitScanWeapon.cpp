@@ -165,7 +165,7 @@ void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 					UDamageType::StaticClass()
 				);
 			}
-			if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(HitPair.Key)) // QUICKFIX
+			if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(HitPair.Key)) // QUICKFIX. I do not like this cast here but I cannot refactor this right now. TODO.
 			{
 				HitCharacters.Add(HitCharacter);
 			}
