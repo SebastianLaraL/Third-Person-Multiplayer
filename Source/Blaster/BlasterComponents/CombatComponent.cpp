@@ -79,7 +79,7 @@ void UCombatComponent::SetSpeeds(const float InBaseSpeed, const float InCrouchSp
 	if (!Character || !Character->GetCharacterMovement()) return;
 	BaseWalkSpeed = InBaseSpeed;
 	AimWalkSpeed = InBaseSpeed;
-	
+
 	Character->GetCharacterMovement()->MaxWalkSpeedCrouched = InCrouchSpeed;
 }
 
@@ -120,12 +120,12 @@ void UCombatComponent::SetAiming(bool NewAiming)
 		if (NewAiming)
 		{
 			if (ZoomInSniperRifle)
-			UGameplayStatics::PlaySound2D(this, ZoomInSniperRifle);
+				UGameplayStatics::PlaySound2D(this, ZoomInSniperRifle);
 		}
 		else
 		{
 			if (ZoomOutSniperRifle)
-			UGameplayStatics::PlaySound2D(this, ZoomOutSniperRifle);
+				UGameplayStatics::PlaySound2D(this, ZoomOutSniperRifle);
 		}
 	}
 	if (Character->IsLocallyControlled())
@@ -174,7 +174,7 @@ void UCombatComponent::OnRep_SecondaryWeapon()
 		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
 		AttachActorToBack(SecondaryWeapon);
 		PlayEquipWeaponSound(EquippedWeapon);
-		
+
 		if (!EquippedWeapon) return;
 		EquippedWeapon->SetOwner(Character);
 	}
@@ -230,10 +230,12 @@ void UCombatComponent::Fire()
 		{
 		case EFireType::EFT_Projectile:
 		case EFireType::EFT_HitScan:
-			FireWeapon();				break;
+			FireWeapon();
+			break;
 		case EFireType::EFT_Shotgun:
-			FireShotgun();				break;
-		default:						break;
+			FireShotgun();
+			break;
+		default: break;
 		}
 	}
 	StartFireTimer();
@@ -266,11 +268,12 @@ void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 {
 	if (!EquippedWeapon || !Character) return;
 	// Allow characters with a shotgun to fire when they are reloading.
-	if (CombatState == ECombatState::ECS_Reloading || CombatState == ECombatState::ECS_Unoccupied && EquippedWeapon->GetWeaponType() ==
+	if (CombatState == ECombatState::ECS_Reloading || CombatState == ECombatState::ECS_Unoccupied && EquippedWeapon->
+		GetWeaponType() ==
 		EWeaponType::EWT_Shotgun)
 	{
 		Character->PlayFireMontage(bIsAiming);
-		EquippedWeapon->Fire(TraceHitTarget); 
+		EquippedWeapon->Fire(TraceHitTarget);
 		CombatState = ECombatState::ECS_Unoccupied;
 		return;
 	}
@@ -337,12 +340,14 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 	LocalFire(TraceHitTarget);
 }
 
-void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets, const float FireDelay)
+void UCombatComponent::ServerShotgunFire_Implementation(const TArray<FVector_NetQuantize>& TraceHitTargets,
+                                                        const float FireDelay)
 {
 	MulticastShotgunFire(TraceHitTargets);
 }
 
-bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuantize>& TraceHitTargets, const float FireDelay)
+bool UCombatComponent::ServerShotgunFire_Validate(const TArray<FVector_NetQuantize>& TraceHitTargets,
+                                                  const float FireDelay)
 {
 	if (!EquippedWeapon) return true;
 	return FMath::IsNearlyEqual(EquippedWeapon->FireDelay, FireDelay, 0.001f);
@@ -546,25 +551,9 @@ void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 void UCombatComponent::SwapWeapons()
 {
 	if (!CanSwapWeapons() || !Character) return;
-	
+
 	Character->PlaySwapMontage();
 	CombatState = ECombatState::ECS_SwappingWeapons;
-	
-	AWeapon* const TempWeapon = EquippedWeapon;
-	EquippedWeapon = SecondaryWeapon;
-	SecondaryWeapon = TempWeapon;
-
-	/* Moved to blueprint callable function: FinishSwapAttachWeapons
-	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-	AttachActorToRightHand(EquippedWeapon);
-
-	EquippedWeapon->SetHUDAmmo();
-	UpdateCarriedAmmo();
-	PlayEquipWeaponSound(EquippedWeapon);
-
-	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
-	AttachActorToBack(SecondaryWeapon);
-	*/
 }
 
 void UCombatComponent::EquipPrimaryWeapon(AWeapon* WeaponToEquip)
@@ -770,6 +759,13 @@ void UCombatComponent::FinishSwap()
 
 void UCombatComponent::FinishSwapAttachWeapons()
 {
+	if(!Character || !Character->HasAuthority()) return;
+	
+	AWeapon* const TempWeapon = EquippedWeapon;	// This swapping section used to be performed at the beginning of SwapWeapons, but since EquippedWeapon and SecondaryWeapon are replicated
+	EquippedWeapon = SecondaryWeapon;				// clients saw the weapon swap instantly instead of seeing it when this function (in an anim notify) is called.
+	SecondaryWeapon = TempWeapon;
+	
+	
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 	AttachActorToRightHand(EquippedWeapon);
 
