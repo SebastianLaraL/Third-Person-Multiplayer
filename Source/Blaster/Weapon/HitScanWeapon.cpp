@@ -25,16 +25,11 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	const auto World = GetWorld();
 	if (!World) return;
 
-	const auto OwnerPawn = Cast<APawn>(GetOwner());
-	if (!OwnerPawn) return;
-
-	const auto InstigatorController = OwnerPawn->GetController();
-
-	const USkeletalMeshSocket* MuzzleFlashSocket = GetMesh()->GetSocketByName(MuzzleSocketName);
-	if (!MuzzleFlashSocket) return;
-
-	const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetMesh());
-	const FVector Start = SocketTransform.GetLocation();
+	FVector Start;
+	APawn* OwnerPawn;
+	AController* InstigatorController;
+	if (!GetFireSetup(Start, OwnerPawn, InstigatorController)) return;
+	
 	
 	TMap<ABlasterCharacter*, uint32> HitMap; // Pair of values for a character and the number of hits they receive.
 	for (uint32 Index = 0; Index < NumberOfPellets; Index++)
@@ -47,25 +42,10 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 
 		if (HitCharacter && InstigatorController) // Trace hit something.
 		{
-			if (HitMap.Contains(HitCharacter))
-			{
-				HitMap[HitCharacter]++; // Increase the number of hits.
-			}
-			else
-			{
-				HitMap.Emplace(HitCharacter,1);
-			}
+			HitMap.Contains(HitCharacter) ? HitMap[HitCharacter]++ : HitMap.Emplace(HitCharacter, 1);
 		}
-		/* Impact VFX/SFX. */
-		if (ImpactEffect)
-		{
-			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				World,
-				ImpactEffect,
-				Hit.ImpactPoint,
-				Hit.ImpactNormal.Rotation()
-				);
-		}
+		SpawnImpactEffect(Hit);
+		
 		// Hit sound.
 	}
 	// Apply damage to all actors according to the number of hits received.
@@ -73,15 +53,8 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	{
 		ABlasterCharacter* HitBlasterCharacter = HitPair.Key;
 		if (!HitBlasterCharacter || !InstigatorController) continue;
-		const bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
-		if (HasAuthority() && bCauseAuthDamage)
-		{
-			UGameplayStatics::ApplyDamage(HitPair.Key,
-				Damage * HitPair.Value, // Number of pellets that hit multiplied by damage.
-				InstigatorController,
-				this,
-				UDamageType::StaticClass());
-		}
+		
+		ApplyHitDamage(HitBlasterCharacter, Damage * HitPair.Value, InstigatorController, OwnerPawn);
 		
 		if (!HasAuthority() && bUseServerSideRewind)
 		{
@@ -105,18 +78,14 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 {
 	AWeapon::Fire(FVector());
-	const APawn* OwnerPawn = Cast<APawn>(GetOwner());
-	if (!OwnerPawn) return;
-	AController* InstigatorController = OwnerPawn->GetController();
-
-	const USkeletalMeshSocket* MuzzleFlashSocket = GetMesh()->GetSocketByName("MuzzleFlash");
-	if (!MuzzleFlashSocket) return;
-
+	
 	const auto World = GetWorld();
 	if (!World) return;
-
-	const FTransform SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetMesh());
-	const FVector Start = SocketTransform.GetLocation();
+	
+	FVector Start;
+	APawn* OwnerPawn;
+	AController* InstigatorController;
+	if (!GetFireSetup(Start, OwnerPawn, InstigatorController)) return;
 
 	// Maps hit character to number of times hit
 	TMap<AActor*, uint32> HitMap;
@@ -127,24 +96,8 @@ void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 
 		if (AActor* HitActor = FireHit.GetActor())
 		{
-			if (HitMap.Contains(HitActor))
-			{
-				HitMap[HitActor]++;
-			}
-			else
-			{
-				HitMap.Emplace(HitActor, 1);
-			}
-			/* Impact VFX/SFX. */
-			if (ImpactEffect)
-			{
-				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-					World,
-					ImpactEffect,
-					FireHit.ImpactPoint,
-					FireHit.ImpactNormal.Rotation()
-				);
-			}
+			HitMap.Contains(HitActor) ? HitMap[HitActor]++ : HitMap.Emplace(HitActor, 1);
+			SpawnImpactEffect(FireHit);
 		}
 	}
 	
@@ -152,25 +105,16 @@ void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 	
 	for (const auto& HitPair : HitMap)
 	{
-		if (HitPair.Key && InstigatorController)
+		if (!HitPair.Key || !InstigatorController) continue;
+		
+		ApplyHitDamage(HitPair.Key, Damage * HitPair.Value, InstigatorController, OwnerPawn);
+
+		if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(HitPair.Key)) // QUICKFIX. I do not like this cast here, but I cannot refactor this right now. TODO.
 		{
-			const bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
-			if (HasAuthority() && bCauseAuthDamage)
-			{
-				UGameplayStatics::ApplyDamage(
-					HitPair.Key, // Character that was hit
-					Damage * HitPair.Value, // Multiply Damage by number of times hit
-					InstigatorController,
-					this,
-					UDamageType::StaticClass()
-				);
-			}
-			if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(HitPair.Key)) // QUICKFIX. I do not like this cast here but I cannot refactor this right now. TODO.
-			{
-				HitCharacters.Add(HitCharacter);
-			}
+			HitCharacters.Add(HitCharacter);
 		}
 	}
+	
 	if (!HasAuthority() && bUseServerSideRewind)
 	{
 		if (!BlasterOwnerCharacter || ! BlasterOwnerController) return; // I could make checks for both of these but nah.
@@ -240,5 +184,41 @@ void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector& Hi
 		{
 			Beam->SetVectorParameter(FName("Target"), BeamEnd);
 		}
+	}
+}
+
+bool AHitScanWeapon::GetFireSetup(FVector& OutStart, APawn*& OutOwnerPawn, AController*& OutInstigatorController) const
+{
+	OutOwnerPawn = Cast<APawn>(GetOwner());
+	if (!OutOwnerPawn) return false;
+	
+	OutInstigatorController = OutOwnerPawn->GetController();
+	
+	const USkeletalMeshSocket* MuzzleFlashSocket = GetMesh()->GetSocketByName(MuzzleSocketName);
+	if (!MuzzleFlashSocket) return false;
+	
+	OutStart = MuzzleFlashSocket->GetSocketTransform(GetMesh()).GetLocation();
+	return true;
+}
+
+void AHitScanWeapon::SpawnImpactEffect(const FHitResult& Hit) const
+{
+	if (ImpactEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			ImpactEffect,
+			Hit.ImpactPoint,
+			Hit.ImpactNormal.Rotation()
+		);
+	}
+}
+
+void AHitScanWeapon::ApplyHitDamage(AActor* HitActor, const float DamageAmount, AController* InstigatorController, const APawn* OwnerPawn) const
+{
+	const bool bCauseAuthDamage = !bUseServerSideRewind || OwnerPawn->IsLocallyControlled();
+	if (HasAuthority() && bCauseAuthDamage)
+	{
+		UGameplayStatics::ApplyDamage(HitActor, DamageAmount, InstigatorController, const_cast<AHitScanWeapon*>(this), UDamageType::StaticClass());
 	}
 }
