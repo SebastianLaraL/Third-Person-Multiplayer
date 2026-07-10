@@ -32,6 +32,8 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	
 	
 	TMap<ABlasterCharacter*, uint32> HitMap; // Pair of values for a character and the number of hits they receive.
+	TMap<ABlasterCharacter*, uint32> HeadShotHitMap;
+	
 	for (uint32 Index = 0; Index < NumberOfPellets; Index++)
 	{
 		// Trace will ignore owner.
@@ -42,19 +44,44 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 
 		if (HitCharacter && InstigatorController) // Trace hit something.
 		{
-			HitMap.Contains(HitCharacter) ? HitMap[HitCharacter]++ : HitMap.Emplace(HitCharacter, 1);
+			const bool bHeadShot = Hit.BoneName == HeadBone;
+			FString String = FString::Printf(TEXT("HitBone: %s"), *Hit.BoneName.ToString());
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, String);
+			if (bHeadShot)
+			{
+				HeadShotHitMap.Contains(HitCharacter) ? HeadShotHitMap[HitCharacter]++ : HeadShotHitMap.Emplace(HitCharacter, 1);
+			}
+			else
+			{
+				HitMap.Contains(HitCharacter) ? HitMap[HitCharacter]++ : HitMap.Emplace(HitCharacter, 1);
+			}
 		}
 		SpawnImpactEffect(Hit);
 		
 		// Hit sound.
 	}
-	// Apply damage to all actors according to the number of hits received.
+	
+	TMap<ABlasterCharacter*, float> DamageMap;
 	for (const auto& HitPair : HitMap)
 	{
-		ABlasterCharacter* HitBlasterCharacter = HitPair.Key;
+		if (HitPair.Key) DamageMap.Emplace(HitPair.Key, HitPair.Value * Damage);
+	}
+	for (const auto& HeadShotPair : HeadShotHitMap)
+	{
+		if (HeadShotPair.Key)
+		{
+			if (DamageMap.Contains(HeadShotPair.Key)) DamageMap[HeadShotPair.Key] += HeadShotPair.Value * HeadShotDamage;
+			else DamageMap.Emplace(HeadShotPair.Key, HeadShotPair.Value * HeadShotDamage);
+		}
+	}
+	
+	// Apply damage to all actors according to the number of hits received, including headshots.
+	for (const auto& DamagePair : DamageMap)
+	{
+		ABlasterCharacter* HitBlasterCharacter = DamagePair.Key;
 		if (!HitBlasterCharacter || !InstigatorController) continue;
 		
-		ApplyHitDamage(HitBlasterCharacter, Damage * HitPair.Value, InstigatorController, OwnerPawn);
+		ApplyHitDamage(HitBlasterCharacter, DamagePair.Value, InstigatorController, OwnerPawn);
 		
 		if (!HasAuthority() && bUseServerSideRewind)
 		{
@@ -88,31 +115,54 @@ void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 	if (!GetFireSetup(Start, OwnerPawn, InstigatorController)) return;
 
 	// Maps hit character to number of times hit
-	TMap<AActor*, uint32> HitMap;
+	TMap<ABlasterCharacter*, uint32> HitMap;
+	TMap<ABlasterCharacter*, uint32> HeadShotHitMap;
+	
 	for (FVector_NetQuantize HitTarget : HitTargets)
 	{
 		FHitResult FireHit;
 		WeaponTraceHit(Start, HitTarget, FireHit);
 
-		if (AActor* HitActor = FireHit.GetActor())
+		if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(FireHit.GetActor()))
 		{
-			HitMap.Contains(HitActor) ? HitMap[HitActor]++ : HitMap.Emplace(HitActor, 1);
+			const bool bHeadShot = FireHit.BoneName == HeadBone;
+			if (bHeadShot)
+			{
+				HeadShotHitMap.Contains(HitCharacter) ? HeadShotHitMap[HitCharacter]++ : HeadShotHitMap.Emplace(HitCharacter, 1);
+			}
+			else
+			{
+				HitMap.Contains(HitCharacter) ? HitMap[HitCharacter]++ : HitMap.Emplace(HitCharacter, 1);
+			}
 			SpawnImpactEffect(FireHit);
 		}
 	}
 	
 	TArray<ABlasterCharacter*> HitCharacters;
+	TMap<AActor*, float> DamageMap;
 	
 	for (const auto& HitPair : HitMap)
 	{
-		if (!HitPair.Key || !InstigatorController) continue;
-		
-		ApplyHitDamage(HitPair.Key, Damage * HitPair.Value, InstigatorController, OwnerPawn);
-
-		if (ABlasterCharacter* HitCharacter = Cast<ABlasterCharacter>(HitPair.Key)) // QUICKFIX. I do not like this cast here, but I cannot refactor this right now. TODO.
+		if (HitPair.Key)
 		{
-			HitCharacters.Add(HitCharacter);
+			DamageMap.Emplace(HitPair.Key, HitPair.Value * Damage);
+			HitCharacters.AddUnique(HitPair.Key);
 		}
+	}
+	for (const auto& HeadShotPair : HeadShotHitMap)
+	{
+		if (HeadShotPair.Key)
+		{
+			if (DamageMap.Contains(HeadShotPair.Key)) DamageMap[HeadShotPair.Key] += HeadShotPair.Value * HeadShotDamage;
+			else DamageMap.Emplace(HeadShotPair.Key, HeadShotPair.Value * HeadShotDamage);
+			HitCharacters.AddUnique(HeadShotPair.Key);
+		}
+	}
+	
+	for (const auto& DamagePair : DamageMap)
+	{
+		if (!DamagePair.Key || !InstigatorController) continue;
+		ApplyHitDamage(DamagePair.Key, DamagePair.Value, InstigatorController, OwnerPawn);
 	}
 	
 	if (!HasAuthority() && bUseServerSideRewind)
@@ -171,7 +221,11 @@ void AHitScanWeapon::WeaponTraceHit(const FVector& TraceStart, const FVector& Hi
 	{
 		BeamEnd = OutHit.ImpactPoint;
 	}
-	DRAW_DEBUG_SPHERE(GetWorld(), BeamEnd, 16.f, 12, FColor::Orange, true, -1, 0, 0);
+	else
+	{
+		OutHit.ImpactPoint = End;
+	}
+	DRAW_DEBUG_SPHERE(GetWorld(), BeamEnd, 16.f, 12, FColor::Orange, false, 8.0f, 0, 0);
 	
 	if (BeamEffectLegacy)
 	{

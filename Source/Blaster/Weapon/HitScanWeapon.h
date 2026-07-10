@@ -29,7 +29,7 @@ protected:
 	void WeaponTraceHit(const FVector& TraceStart, const FVector& HitTarget, FHitResult& OutHit) const;
 	
 	
-	UPROPERTY(EditDefaultsOnly, meta = (ClampMin = 0.f))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = 0.f, AllowPrivateAccess = true))
 	float HeadShotDamage = 100.f;
 	
 	// Used for detecting headshots.
