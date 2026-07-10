@@ -248,6 +248,7 @@ private:
 	
 	FTimerHandle ElimTimer;
 	
+	// Time to wait before respawning.
 	UPROPERTY(EditDefaultsOnly, Category = Elimination)
 	float ElimDelay = 3.f;
 	
