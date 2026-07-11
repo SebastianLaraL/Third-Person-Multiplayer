@@ -156,6 +156,10 @@ protected:
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f, AllowPrivateAccess = true))
 	float Damage = 10.f;
 	
+	// Does not apply with grenades and rockets.
+	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f, AllowPrivateAccess = true))
+	float HeadShotDamage = 100.f;
+	
 	UPROPERTY(EditAnywhere)
 	EWeaponType WeaponType;
 	
@@ -247,4 +251,5 @@ public:
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
 	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	FORCEINLINE float GetDamage() const { return Damage; }
+	FORCEINLINE float GetHeadShotDamage() const { return HeadShotDamage; }
 };

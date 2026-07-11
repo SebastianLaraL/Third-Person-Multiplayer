@@ -45,8 +45,6 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 		if (HitCharacter && InstigatorController) // Trace hit something.
 		{
 			const bool bHeadShot = Hit.BoneName == HeadBone;
-			FString String = FString::Printf(TEXT("HitBone: %s"), *Hit.BoneName.ToString());
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, String);
 			if (bHeadShot)
 			{
 				HeadShotHitMap.Contains(HitCharacter) ? HeadShotHitMap[HitCharacter]++ : HeadShotHitMap.Emplace(HitCharacter, 1);
