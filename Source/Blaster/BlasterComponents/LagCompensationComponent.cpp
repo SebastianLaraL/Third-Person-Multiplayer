@@ -67,7 +67,12 @@ void ULagCompensationComponent::ServerProjectileScoreRequest_Implementation(ABla
 	
 	if (OwnerCharacter && HitCharacter && Confirm.bHitConfirmed)
 	{
-		UGameplayStatics::ApplyDamage(HitCharacter, OwnerCharacter->GetEquippedWeapon()->GetDamage(),
+		const AWeapon* EquippedWeapon = OwnerCharacter->GetEquippedWeapon();
+		if (!EquippedWeapon) return;
+		
+		const float DamageToCause = Confirm.bHeadShot ? EquippedWeapon->GetHeadShotDamage() : EquippedWeapon->GetDamage();
+		
+		UGameplayStatics::ApplyDamage(HitCharacter, DamageToCause,
 			OwnerCharacter->Controller, OwnerCharacter->GetEquippedWeapon(), UDamageType::StaticClass());
 	}
 }
