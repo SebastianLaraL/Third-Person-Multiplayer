@@ -17,4 +17,8 @@ class BLASTER_API AProjectileBullet : public AProjectile
 	protected:
 	virtual void BeginPlay() override;
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
+	
+	// Used for detecting headshots.
+	UPROPERTY(EditDefaultsOnly)
+	FName HeadBoneName = FName("Head");
 };
