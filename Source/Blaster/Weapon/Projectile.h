@@ -52,7 +52,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	float InitialSpeed = 15000.f;
 	
-	UPROPERTY(EditDefaultsOnly, meta = (ClampMin = 0.000001))
+	// Set by ProjectileWeapon::Fire() for rockets and bullets. 
+	// For grenades, set this directly since they are thrown by hand.
+	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.000001f, ToolTip = "Only edit this for ProjectileGrenade (since it is hand thrown). For rockets and bullets this value is overwritten by the weapon at spawn time."))
 	float Damage = 1.f;
 
 protected:
