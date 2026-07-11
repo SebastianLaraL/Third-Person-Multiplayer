@@ -92,8 +92,7 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 					HitBlasterCharacter,
 					Start,
 					HitTarget,
-					BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime,
-					this
+					BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime
 				);
 			}
 		}
@@ -168,7 +167,7 @@ void AHitScanWeapon::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 		if (!BlasterOwnerCharacter || ! BlasterOwnerController) return; // I could make checks for both of these but nah.
 		if (BlasterOwnerCharacter->GetLagCompensationComponent() && BlasterOwnerCharacter->IsLocallyControlled())
 		{
-			BlasterOwnerCharacter->GetLagCompensationComponent()->ShotgunServerScoreRequest(
+			BlasterOwnerCharacter->GetLagCompensationComponent()->ServerShotgunScoreRequest(
 				HitCharacters, Start, HitTargets,
 				BlasterOwnerController->GetServerTime() - BlasterOwnerController->SingleTripTime
 			);
