@@ -44,13 +44,14 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 			{
 				SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
 				SpawnedProjectile->bUseServerSideRewind = false;
-				//SpawnedProjectile->Damage = Damage;
+				SpawnedProjectile->Damage = Damage;
 			}
 			else // Server, controlled by a remote client.
 			{
 				SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
 				SpawnedProjectile->SetReplicates(false);
-				SpawnedProjectile->bUseServerSideRewind = false;
+				SpawnedProjectile->bUseServerSideRewind = true;
+				SpawnedProjectile->Damage = Damage;
 			}
 		}
 		else
@@ -62,13 +63,14 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 				SpawnedProjectile->bUseServerSideRewind = true;
 				SpawnedProjectile->TraceStart = SocketTransform.GetLocation();
 				SpawnedProjectile->InitialVelocity = SpawnedProjectile->GetActorForwardVector() * SpawnedProjectile->InitialSpeed;
-				//SpawnedProjectile->Damage = Damage;
+				SpawnedProjectile->Damage = Damage;
 			}
 			else // Remote client without SSR.
 			{
 				SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
 				SpawnedProjectile->SetReplicates(false);
 				SpawnedProjectile->bUseServerSideRewind = false;
+				SpawnedProjectile->Damage = Damage;
 			}
 		}
 	}
@@ -77,8 +79,8 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 		if (InstigatorPawn->HasAuthority())
 		{
 			SpawnedProjectile = World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
-			SpawnedProjectile->bUseServerSideRewind = true;
-			//SpawnedProjectile->Damage = Damage;
+			SpawnedProjectile->bUseServerSideRewind = false;
+			SpawnedProjectile->Damage = Damage;
 		}
 	}
 	// TODO: object pooling?
