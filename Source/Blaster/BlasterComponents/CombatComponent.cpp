@@ -776,6 +776,12 @@ void UCombatComponent::FinishSwapAttachWeapons()
 
 	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_EquippedSecondary);
 	AttachActorToBack(SecondaryWeapon);
+	
+	// When swapping to sniper and aiming, display sniper scope.
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_SniperRifle && bIsAiming && Controller)
+	{
+		Controller->SetHUDSniperScope(bIsAiming);
+	}
 }
 
 void UCombatComponent::OnRep_CombatState()

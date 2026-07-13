@@ -288,7 +288,7 @@ void ABlasterPlayerController::SetHUDAnnouncementCountdown(const float Countdown
 
 void ABlasterPlayerController::SetHUDSniperScope(const bool bIsAiming)
 {
-	ValidateBlasterHUD();
+	if (!ValidateBlasterHUD()) return;
 
 	if (!BlasterHUD->SniperScope)
 	{
