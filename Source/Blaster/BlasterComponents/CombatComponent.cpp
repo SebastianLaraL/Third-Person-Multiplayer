@@ -268,9 +268,8 @@ void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 {
 	if (!EquippedWeapon || !Character) return;
 	// Allow characters with a shotgun to fire when they are reloading.
-	if (CombatState == ECombatState::ECS_Reloading || CombatState == ECombatState::ECS_Unoccupied && EquippedWeapon->
-		GetWeaponType() ==
-		EWeaponType::EWT_Shotgun)
+	if (CombatState == ECombatState::ECS_Reloading || CombatState == ECombatState::ECS_Unoccupied &&
+		EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun)
 	{
 		Character->PlayFireMontage(bIsAiming);
 		EquippedWeapon->Fire(TraceHitTarget);
