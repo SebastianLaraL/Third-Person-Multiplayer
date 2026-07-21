@@ -54,7 +54,10 @@ void UMultiplayerSessionsSubsystem::CreateSession(int32 NumPublicConnections, FS
 
 	LastSessionSettings = MakeShareable(new FOnlineSessionSettings());
 	// Is LAN if steam subsystem is used, otherwise false
-	LastSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL" ? true : false;
+	if (IOnlineSubsystem::Get())
+	{
+		LastSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL" ? true : false;
+	}
 	LastSessionSettings->NumPublicConnections = NumPublicConnections; // Number of connections for a particular session
 	LastSessionSettings->bAllowJoinInProgress = true;
 	LastSessionSettings->bAllowJoinViaPresence = true;
@@ -105,7 +108,10 @@ void UMultiplayerSessionsSubsystem::FindSessions(int32 MaxSearchResults)
 		FindSessionsCompleteDelegate);
 	LastSessionSearch = MakeShareable(new FOnlineSessionSearch());
 	LastSessionSearch->MaxSearchResults = MaxSearchResults;
-	LastSessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL" ? true : false;
+	if (IOnlineSubsystem::Get())
+	{
+		LastSessionSearch->bIsLanQuery = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL" ? true : false;
+	}
 	LastSessionSearch->QuerySettings.
 	                   Set(SEARCH_LOBBIES /*FName("SEARCH_LOBBIES")*//*SEARCH_PRESENCE*//*FName("SEARCH_PRESENCE")*/, true,
 	                       EOnlineComparisonOp::Equals);
@@ -257,7 +263,7 @@ void UMultiplayerSessionsSubsystem::OnStartSessionComplete(FName SessionName, bo
 
 bool UMultiplayerSessionsSubsystem::OnlineSubsystemIsAvailable() const
 {
-	if (IOnlineSubsystem::Get()->GetSubsystemName() == "STEAM")
+	if (IOnlineSubsystem::Get() && IOnlineSubsystem::Get()->GetSubsystemName() == "STEAM")
 	{
 		return true;
 	}
