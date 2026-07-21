@@ -161,7 +161,7 @@ void UMenu::OnOnlineSubsystemNotAvailable()
 	if (OnlineSubsystemWarningText)
 	{
 		OnlineSubsystemWarningText->SetText(
-			FText::FromString(TEXT("No online subsystem available. Make sure Steam or Epic Games is running."))
+			FText::FromString(TEXT("No online subsystem available. Make sure Steam is running.")) // "Or Epic games". Maybe develop this eventually.
 			);
 		OnlineSubsystemWarningText->SetVisibility(ESlateVisibility::Visible);
 	}
