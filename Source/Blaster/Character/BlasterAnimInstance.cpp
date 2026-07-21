@@ -14,6 +14,8 @@ void UBlasterAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 
 	BlasterCharacter = Cast<ABlasterCharacter>(TryGetPawnOwner());
+	
+	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 }
 
 void UBlasterAnimInstance::NativeUpdateAnimation(const float DeltaSeconds)
@@ -84,7 +86,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(const float DeltaSeconds)
 		{
 			bLocallyControlled = true;
 			const FTransform RightHandTransform = BlasterCharacter->GetMesh()->GetSocketTransform(
-				FName("RightHand"), RTS_World);
+				RightHandBoneName, RTS_World);
 			FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(RightHandTransform.GetLocation(), BlasterCharacter->GetHitTarget());
 			
 
