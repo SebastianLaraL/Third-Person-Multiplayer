@@ -284,7 +284,17 @@ void ABlasterCharacter::PlayHitReactMontage() const
 	if (const auto AnimInstance = GetMesh()->GetAnimInstance(); AnimInstance && HitReactMontage)
 	{
 		AnimInstance->Montage_Play(HitReactMontage);
-		const FName SectionName("FromFront"); // TEMP: add more sections to play here in code.
+		// Play random section. I could refactor this to play an animation according to hit angle, but I do not have enough time for that.
+		const int32 Anim = FMath::RandRange(0, 3);
+		FName SectionName;
+		switch (Anim)
+		{
+			case 0: SectionName = FName("FromFront");			break;
+		case 1: SectionName = FName("FromLeft");				break;
+		case 2: SectionName = FName("FromRight");				break;
+		case 3: SectionName = FName("FromBack");				break;
+		default: SectionName = FName("FromFront");				break;
+		}		
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
@@ -353,6 +363,9 @@ void ABlasterCharacter::Destroyed()
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	// Initialize rotation so legs are facing the forward direction (and not left or right).
+	StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 
 	// Bind health changed.
 	// We don't bind it only on server to allow for HitMontage play for every character in all machines.
