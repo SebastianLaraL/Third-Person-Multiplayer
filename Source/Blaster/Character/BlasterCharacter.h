@@ -187,7 +187,7 @@ private:
 	float AO_Yaw;
 	float InterpAO_Yaw;
 	float AO_Pitch;
-	FRotator StartingAimRotation;
+	FRotator StartingAimRotation = FRotator::ZeroRotator;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Combat, meta = (AllowPrivateAccess = true, ClampMin = 0.0f))
 	float TurningInterpolationSpeed = 10.f;
@@ -224,7 +224,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	float CameraThreshold = 200.f;
 	
-	bool bRotateRootBone;
+	bool bRotateRootBone = false;
 	
 	/* Higher threshold value for less Turning in place animation repetitions. */
 	UPROPERTY(EditAnywhere, Category = "Movement|Replication", meta = (AllowPrivateAccess = "true"))

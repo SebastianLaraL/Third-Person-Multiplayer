@@ -81,7 +81,7 @@ private:
 
 
 	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	ETurningInPlace TurningInPlace;
+	ETurningInPlace TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 
 	// Hand Correction 
 	//Removed because bone was rotated incorrectly.
